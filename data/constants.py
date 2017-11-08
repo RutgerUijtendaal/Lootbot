@@ -17,7 +17,7 @@ DATABASE_PATH = 'lootbot.db'
 
 BASE_MESSAGE_POINTS = 1
 BASE_GAME_POINTS = 2
-BASE_VOICE_POINTS = 3
+BASE_VOICE_POINTS = 2
 
 # Time in seconds for how often a points can be award
 
@@ -47,8 +47,8 @@ LOOTBOX_EMOJI = ("\U0001F949", "\U0001F948", "\U0001F947")
 
 # Time in seconds for how often a lootbox can be award
 
-VOICE_LOOTBOX_TIME = 180
-GAME_LOOTBOX_TIME = 180
+VOICE_LOOTBOX_TIME = 60
+GAME_LOOTBOX_TIME = 60
 
 # Lootbox chance is ( loot_chance / loottable_max_length)
 

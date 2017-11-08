@@ -88,13 +88,13 @@ class Lootbot(commands.Bot):
                     lootboxes[lootbox] = lootboxes[lootbox] + 1
                     await self.award_lootbox(lootbox, amember, amember.server)
             if lootbox_earned:
-                message = ("```js\n" + amember.mention + " got:\n")
+                message = (amember.mention + " got: ""```js\n")
                 for i, x in enumerate(lootboxes):
                     if x != 0:
                         message += (str(x) + " " +
                                     constants.LOOTBOX_STRING_RARITY[i] + " lootboxes\n")
-                message += "While gaming```"
-                self.say_lootbot_channel(amember.server, message)
+                message += "\nWhile being ingame.```"
+                await self.say_lootbot_channel(amember.server, message)
 
             # For every GAME_POINT_TIME seconds played the user is awarded points
             game_point_multiplier = self.db.get_game_point_multiplier(
@@ -119,15 +119,16 @@ class Lootbot(commands.Bot):
                 lootbox = self.roll_lootbox()
                 if lootbox != -1:
                     lootbox_earned = True
+                    lootboxes[lootbox] = lootboxes[lootbox] + 1
                     await self.award_lootbox(lootbox, amember, amember.server)
             if lootbox_earned:
-                message = ("```js\n" + amember.mention + " got:\n")
+                message = (amember.mention + " got: ""```js\n")
                 for i, x in enumerate(lootboxes):
                     if x != 0:
                         message += (str(x) + " " +
                                     constants.LOOTBOX_STRING_RARITY[i] + " lootboxes\n")
-                message += "While being in voice```"
-                self.say_lootbot_channel(amember.server, message)
+                message += "While being in voice.```"
+                await self.say_lootbot_channel(amember.server, message)
 
             # For every VOICE_POINT_TIME second on voice the user is awarded points
             voice_points_modifier = self.db.get_voice_point_multiplier(
