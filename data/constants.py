@@ -1,6 +1,9 @@
+
+
 # Bot config
 
 INITIAL_EXTENSIONS = (
+    "cogs.lootbot",
     "cogs.lootbox",
     "cogs.ranking",
     "cogs.user",
@@ -8,6 +11,10 @@ INITIAL_EXTENSIONS = (
 
 BOT_PREFIX = '$'
 BOT_CHANNEL = "lootbot"
+
+TRELLO_LINK = "https://trello.com/b/s52Fqf4L/lootbot"
+DESIGN_LINK = "https://docs.google.com/document/d/15CvsTLqlmZnjCEmZk3KYvYLlhpGEZPiwtM23TEF6enE/edit?usp=sharing"
+GITHUB_LINK = "https://github.com/RutgerUijtendaal/Lootbot"
 
 # Database
 
@@ -43,7 +50,9 @@ LOOTBOX_STRING_RARITY = ("common", "rare", "legendary")
 
 # Lootbox emoji tuple (Common, Rare, Legendary)
 
+
 LOOTBOX_EMOJI = ("\U0001F949", "\U0001F948", "\U0001F947")
+
 
 # Time in seconds for how often a lootbox can be award
 
