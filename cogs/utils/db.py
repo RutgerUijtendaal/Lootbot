@@ -6,11 +6,13 @@ import sqlite3
 from threading import Thread
 from queue import Queue
 
-from data import models, constants
+import settings
+from data.init import models
 
 log = logging.getLogger(__name__)
 
 # http://amir.rachum.com/blog/2012/04/26/implementing-the-singleton-pattern-in-python/
+# Create a singleton class as a metaclass to only allow one instance of the database thread to be active
 
 
 class SingletonType(type):
@@ -23,12 +25,13 @@ class SingletonType(type):
             return cls.__instance
 
 # http://code.activestate.com/recipes/526618/
+# Run the database in a seperate thread to make sure accessing doesn't block the rest of the program
 
 
 class Database(Thread, metaclass=SingletonType):
 
     def __init__(self):
-        super().__init__(name='tdatabase')
+        super().__init__(name='database')
         log.info("Starting Database")
         self.reqs = Queue()
         sqlite3.register_adapter(datetime.datetime, self.adapt_datetime)
@@ -36,7 +39,7 @@ class Database(Thread, metaclass=SingletonType):
 
     def run(self):
         try:
-            conn = sqlite3.connect(constants.DATABASE_PATH)
+            conn = sqlite3.connect(settings.DATABASE_PATH)
             cursor = conn.cursor()
         except sqlite3.Error as e:
             log.error(e)
@@ -72,217 +75,162 @@ class Database(Thread, metaclass=SingletonType):
         self.execute('--close--')
 
     def create_database(self):
-        if os.path.isfile(constants.DATABASE_PATH):
+        if os.path.isfile(settings.DATABASE_PATH):
             pass
         else:
-            self.execute(models.sql_create_servers_table)
-            self.execute(models.sql_create_members_table)
+            for sql in models.table_creation:
+                self.execute(sql)
 
     def adapt_datetime(self, ts):
         return time.mktime(ts.timetuple())
 
-    # Basic server functions
+    # Server
 
     def add_server(self, server):
 
-        sql = '''INSERT OR IGNORE INTO servers(server_id, name) VALUES(?,?)'''
+        sql = '''INSERT OR IGNORE INTO server(server_id, name) VALUES(?,?)'''
         self.execute(sql, (server.id, server.name))
+
+    def get_all_servers(self):
+        sql = ''' SELECT '''
+
+    # Member
 
     def add_member(self, member):
 
-        sql = '''INSERT OR IGNORE INTO members(member_id, name, server_id) VALUES(?,?,?)'''
+        sql = '''INSERT OR IGNORE INTO member(member_id, name, server_id) VALUES(?,?,?)'''
         self.execute(sql, (member.id, member.name, member.server.id))
+        sql = '''INSERT OR IGNORE INTO multiplier(member_id, server_id) VALUES(?,?)'''
+        self.execute(sql, (member.id, member.server.id))
+        sql = '''INSERT OR IGNORE INTO lootbox(member_id, server_id) VALUES(?,?)'''
+        self.execute(sql, (member.id, member.server.id))
+        sql = '''INSERT OR IGNORE INTO time(member_id, server_id) VALUES(?,?)'''
+        self.execute(sql, (member.id, member.server.id))
+        sql = '''INSERT OR IGNORE INTO daily(member_id, server_id) VALUES(?,?)'''
+        self.execute(sql, (member.id, member.server.id))
+        sql = '''INSERT OR IGNORE INTO settings(member_id, server_id) VALUES(?,?)'''
+        self.execute(sql, (member.id, member.server.id))
 
-    # Points functions
+    def update_experience(self, member, server, experience):
+        sql_update = '''UPDATE member SET experience = experience + ? WHERE member_id = ? AND server_id = ?'''
+        self.execute(sql_update, (experience, member.id, server.id))
 
-    def add_points(self, points, member, server):
+    def increment_level(self, member, server):
+        sql_update = '''UPDATE member SET level = level + 1 WHERE member_id = ? AND server_id = ?'''
+        self.execute(sql_update, (member.id, server.id))
 
-        sql_update = '''UPDATE members SET points = points + ? WHERE member_id = ? AND server_id = ?'''
-        self.execute(sql_update, (points, member.id, server.id))
-
-    def get_points(self, member, server):
-
-        sql_retrieve = '''SELECT points FROM members WHERE member_id = ? AND server_id = ?'''
+    def get_member_progress(self, member, server):
+        sql_retrieve = '''SELECT level, experience FROM member WHERE member_id = ? AND server_id = ?'''
         for res in self.select(sql_retrieve, (member.id, server.id)):
-            points = res
-        return points[0]
+            progress = res
+        return progress
 
-    def get_all_points(self, server):
-        # Returns a dictionary of {name: points} for all users in the server
-        ranking = {}
-        sql_retrieve = '''SELECT name, points FROM members WHERE server_id = ? ORDER BY points DESC'''
-        for res in self.select(sql_retrieve, (server.id,)):
-            ranking[res[0]] = res[1]
-        return ranking
+    # Multipliers
 
-    # Loot rewards
+    def update_message_multiplier(self, member, server, multiplier):
+        sql_update = '''UPDATE multiplier SET message_multiplier = message_multiplier + ? WHERE member_id = ? AND server_id = ?'''
+        self.execute(sql_update, (multiplier, member.id, server.id))
 
-    def add_consumable_loot(self, column, value, member, server):
+    def update_game_multiplier(self, member, server, multiplier):
+        sql_update = '''UPDATE multiplier SET game_multiplier = game_multiplier + ? WHERE member_id = ? AND server_id = ?'''
+        self.execute(sql_update, (multiplier, member.id, server.id))
 
-        sql_update = ('''UPDATE members SET ''' + column + ''' = ''' +
-                      column + ''' + ? WHERE member_id = ? AND server_id = ?''')
-        self.execute(sql_update, (value, member.id, server.id))
-        log.info("Added %s from %s at %s. Value: %s",
-                 column, member.name, server.name, value)
+    def update_voice_multiplier(self, member, server, multiplier):
+        sql_update = '''UPDATE multiplier SET voice_multiplier = voice_multiplier + ? WHERE member_id = ? AND server_id = ?'''
+        self.execute(sql_update, (multiplier, member.id, server.id))
 
-    # General get functions
+    def get_message_multiplier(self, member, server):
 
-    def get_message_point_multiplier(self, member, server):
-
-        sql_retrieve = '''SELECT message_point_multiplier FROM members WHERE member_id = ? AND server_id = ?'''
+        sql_retrieve = '''SELECT message_multiplier FROM multiplier WHERE member_id = ? AND server_id = ?'''
         for res in self.select(sql_retrieve, (member.id, server.id)):
             message_point_multiplier = res[0]
         return message_point_multiplier
 
-    def get_game_point_multiplier(self, member, server):
+    def get_game_multiplier(self, member, server):
 
-        sql_retrieve = '''SELECT game_point_multiplier FROM members WHERE member_id = ? AND server_id = ?'''
+        sql_retrieve = '''SELECT game_multiplier FROM multiplier WHERE member_id = ? AND server_id = ?'''
         for res in self.select(sql_retrieve, (member.id, server.id)):
             game_point_multiplier = res[0]
         return game_point_multiplier
 
-    def get_voice_point_multiplier(self, member, server):
+    def get_voice_multiplier(self, member, server):
 
-        sql_retrieve = '''SELECT voice_point_multiplier FROM members WHERE member_id = ? AND server_id = ?'''
+        sql_retrieve = '''SELECT voice_multiplier FROM multiplier WHERE member_id = ? AND server_id = ?'''
         for res in self.select(sql_retrieve, (member.id, server.id)):
             voice_point_multiplier = res[0]
         return voice_point_multiplier
 
-    def get_user(self, member, server):
-        sql_retrieve = '''SELECT * FROM members WHERE member_id = ? AND server_id = ?'''
+    def get_multipliers(self, member, server):
+
+        sql_retrieve = '''SELECT message_multiplier, game_multiplier, voice_multiplier FROM multiplier WHERE member_id = ? AND server_id = ?'''
         for res in self.select(sql_retrieve, (member.id, server.id)):
-            user = res
-        return user
+            multipliers = res
+        return multipliers
 
-    # Time functions
+    # Dailies
 
-    def set_game_time(self, member, server):
-
-        now = datetime.datetime.now()
-        sql_update = '''UPDATE members SET game_time = ? WHERE member_id = ? AND server_id = ?'''
-        self.execute(sql_update, (now, member.id, server.id))
-
-    def get_game_time(self, member, server):
-
-        now = self.adapt_datetime(datetime.datetime.now())
-        sql_retrieve = '''SELECT game_time FROM members WHERE member_id = ? AND server_id = ?'''
+    def get_first_random_lootbox(self, member, server):
+        sql_retrieve = '''SELECT first_random_lootbox FROM daily WHERE member_id = ? AND server_id = ?'''
         for res in self.select(sql_retrieve, (member.id, server.id)):
-            start_time = res[0]
-        if start_time != 0:
-            return (now - start_time)
-        else:
-            log.error("Failed to get start time for get_game_time, member: %s, server: %s",
-                      member.name, server.name)
-            return 0
+            multipliers = res[0]
+        if multipliers:
+            return True
+        return False
 
-    def set_voice_time(self, member, server):
+    def set_daily(self, member, server, column, completed):
 
-        now = datetime.datetime.now()
-        sql_update = '''UPDATE members SET voice_time = ? WHERE member_id = ? AND server_id = ?'''
-        self.execute(sql_update, (now, member.id, server.id))
+        sql_update = '''UPDATE daily SET ''' + column + \
+            ''' = ? WHERE member_id = ? AND server_id = ?'''
+        self.execute(sql_update, (completed, member.id, server.id))
 
-    def get_voice_time(self, member, server):
-
-        now = self.adapt_datetime(datetime.datetime.now())
-        sql_retrieve = '''SELECT voice_time FROM members WHERE member_id = ? AND server_id = ?'''
-        for res in self.select(sql_retrieve, (member.id, server.id)):
-            start_time = res[0]
-        if start_time != 0:
-            return (now - start_time)
-        else:
-            log.error("Failed to get start time for get_voice_time, member: %s, server: %s",
-                      member.name, server.name)
-            return 0
-
-    def set_status_time(self, member, server):
-
-        now = datetime.datetime.now()
-        sql_update = '''UPDATE members SET status_time = ? WHERE member_id = ? AND server_id = ?'''
-        self.execute(sql_update, (now, member.id, server.id))
-
-    def get_status_time(self, member, server):
-
-        now = self.adapt_datetime(datetime.datetime.now())
-        sql_retrieve = '''SELECT status_time FROM members WHERE member_id = ? AND server_id = ?'''
-        for res in self.select(sql_retrieve, (member.id, server.id)):
-            start_time = res[0]
-        return (now - start_time)
-
-    # Lootbox functions
-
-    def add_lootbox(self, rarity, member, server):
-
-        if 0 <= rarity <= 2:
-            # Update current lootbox count
-            column = constants.LOOTBOX_DB_RARITY_SELECTION[rarity]
-            sql_update = ('''UPDATE members SET ''' + column + ''' = ''' +
-                          column + ''' + 1 WHERE member_id = ? AND server_id = ?''')
-            self.execute(
-                sql_update, (member.id, server.id))
-            # Update total lootbox count
-            column_total = constants.LOOTBOX_DB_RARITY_SELECTION_TOTAL[rarity]
-            sql_update = ('''UPDATE members SET ''' + column_total + ''' = ''' +
-                          column_total + ''' + 1 WHERE member_id = ? AND server_id = ?''')
-            self.execute(
-                sql_update, (member.id, server.id))
-
-            log.info("Added lootbox to %s at %s. Rarity: %s",
-                     member.name, server.name, constants.LOOTBOX_STRING_RARITY[rarity])
-        else:
-            log.error("Failed to add lootbox, rarity: %s, member: %s, server: %s", str(
-                rarity), member.name, server.name)
-
-    def add_total_lootbox(self, rarity, member, server):
-        if 0 <= rarity <= 2:
-            column_total = constants.LOOTBOX_DB_RARITY_SELECTION_TOTAL[rarity]
-            sql_update = ('''UPDATE members SET ''' + column_total + ''' = ''' +
-                          column_total + ''' + 1 WHERE member_id = ? AND server_id = ?''')
-            self.execute(
-                sql_update, (member.id, server.id))
-        else:
-            log.error("Failed to add total lootbox, rarity: %s, member: %s, server: %s", str(
-                rarity), member.name, server.name)
-
-    def remove_lootbox(self, rarity, member, server):
-
-        all_lootboxes = self.get_all_lootboxes(member, server)
-        # Make sure rarity is valid and there's a box to remove from the user
-        if 0 <= rarity <= 2 and all_lootboxes[rarity] > 0:
-            column = constants.LOOTBOX_DB_RARITY_SELECTION[rarity]
-            sql_update = ('''UPDATE members SET ''' + column + ''' = ''' +
-                          column + ''' - 1 WHERE member_id = ? AND server_id = ?''')
-            self.execute(
-                sql_update, (member.id, server.id))
-
-            log.info("Removed lootbox from %s at %s. Rarity: %s",
-                     member.name, server.name, constants.LOOTBOX_STRING_RARITY[rarity])
-        else:
-            log.error("Failed to remove lootbox, rarity: %s, member: %s, server: %s", str(
-                rarity), member.name, server.name)
-
-    def get_all_lootboxes(self, member, server):
-        # Returns a tuple (x, y, z) of lootbox counts for the user
-        sql_retrieve = '''SELECT common_lootbox_count, rare_lootbox_count, leg_lootbox_count FROM members WHERE member_id = ? AND server_id = ?'''
-        for res in self.select(sql_retrieve, (member.id, server.id)):
-            all_lootboxes = res
-        return all_lootboxes
+    def reset_dailies(self):
+        sql_update = (''' UPDATE daily
+                          SET   first_random_lootbox = 0,
+                                first_game = 0,
+                                first_voice = 0 ''')
+        self.execute(sql_update)
 
     # User Settings
 
-    def set_auto_open(self, member, server, auto_open):
+    def set_message_mentions(self, member, server, mentions):
 
-        if self.get_auto_open(member, server) != auto_open:
-            sql_update = '''UPDATE members SET auto_open = ? WHERE member_id = ? AND server_id = ?'''
-            self.execute(sql_update, (auto_open, member.id, server.id))
+        if self.get_message_settings(member, server)[0] != mentions:
+            sql_update = '''UPDATE settings SET message_mentions = ? WHERE member_id = ? AND server_id = ?'''
+            self.execute(sql_update, (mentions, member.id, server.id))
         else:
-            log.error("Auto_open was already set to %s for user %s at %s", str(
-                auto_open), member.name, server.name)
+            log.error("Mentions was already set to %s for user %s at %s", str(
+                mentions), member.name, server.name)
 
-    def get_auto_open(self, member, server):
+    def set_message_loot(self, member, server, loot):
 
-        sql_retrieve = '''SELECT auto_open FROM members WHERE member_id = ? AND server_id = ?'''
+        if self.get_message_settings(member, server)[1] != loot:
+            sql_update = '''UPDATE settings SET message_loot = ? WHERE member_id = ? AND server_id = ?'''
+            self.execute(sql_update, (loot, member.id, server.id))
+        else:
+            log.error("loot was already set to %s for user %s at %s", str(
+                loot), member.name, server.name)
+
+    def set_message_multipliers(self, member, server, multipliers):
+
+        if self.get_message_settings(member, server)[2] != multipliers:
+            sql_update = '''UPDATE settings SET message_multipliers = ? WHERE member_id = ? AND server_id = ?'''
+            self.execute(sql_update, (multipliers, member.id, server.id))
+        else:
+            log.error("multipliers was already set to %s for user %s at %s", str(
+                multipliers), member.name, server.name)
+
+    def set_message_score(self, member, server, score):
+
+        if self.get_message_settings(member, server)[3] != score:
+            sql_update = '''UPDATE settings SET message_score = ? WHERE member_id = ? AND server_id = ?'''
+            self.execute(sql_update, (score, member.id, server.id))
+        else:
+            log.error("score was already set to %s for user %s at %s", str(
+                score), member.name, server.name)
+
+    def get_message_settings(self, member, server):
+
+        sql_retrieve = '''SELECT message_mentions, message_loot, message_multipliers, message_score FROM settings WHERE member_id = ? AND server_id = ?'''
         for res in self.select(sql_retrieve, (member.id, server.id)):
-            auto_open = res[0]
-        if auto_open:
-            return True
-        return False
+            message_settings = res
+        return message_settings

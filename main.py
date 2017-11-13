@@ -3,7 +3,7 @@
 import json
 import logging
 
-from data import constants
+import settings
 from lootbot import Lootbot
 
 
@@ -12,14 +12,22 @@ Cookie clicker within Discord. Do what you normally do and earn points.
 Be lucky and earn a lootbox to earn more points!
 '''
 
+initial_extensions = {
+
+}
+
 
 def setup_logging():
+    # Set up discord logging levels
     logging.getLogger('discord').setLevel(logging.INFO)
     logging.getLogger('discord.http').setLevel(logging.WARNING)
+    # Set program logging level
     log = logging.getLogger()
-    log.setLevel(logging.INFO)
+    level = logging.getLevelName(settings.LOG_LEVEL)
+    log.setLevel(level)
+    # Set file location and formatting
     handler = logging.FileHandler(
-        filename='log/Lootbot.log', encoding='utf-8', mode='w')
+        filename='log/lootbot.log', encoding='utf-8', mode='w')
     handler.setFormatter(logging.Formatter(
         '%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
     log.addHandler(handler)
@@ -27,20 +35,20 @@ def setup_logging():
 
 
 def load_auth():
-    with open('data/auth.json') as data_file:
+    with open('data/init/auth.json') as data_file:
         return json.load(data_file)
 
 
 def main():
     log = setup_logging()
     help_attrs = dict(hidden=True)  # Hides the !help description in !help
-    bot = Lootbot(command_prefix=constants.BOT_PREFIX, description=description,
+    bot = Lootbot(command_prefix=settings.BOT_PREFIX, description=description,
                   pm_help=None, help_attrs=help_attrs)
     auth = load_auth()
-    discord_token = auth['discord_token']
-    bot.client_id = auth['discord_client_id']
+    discord_token = auth['debug_token']
+    bot.client_id = auth['debug_client_id']
 
-    for extension in constants.INITIAL_EXTENSIONS:
+    for extension in initial_extensions:
         try:
             bot.load_extension(extension)
         except Exception:
