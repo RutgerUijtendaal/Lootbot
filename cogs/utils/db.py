@@ -92,7 +92,7 @@ class Database(Thread, metaclass=SingletonType):
         self.execute(sql, (server.id, server.name))
 
     def get_all_servers(self):
-        sql = ''' SELECT '''
+        pass
 
     # Member
 
@@ -124,6 +124,53 @@ class Database(Thread, metaclass=SingletonType):
         for res in self.select(sql_retrieve, (member.id, server.id)):
             progress = res
         return progress
+
+    # Lootboxes
+
+    def get_season_lootbox(self, member, server):
+        sql_retrieve = ('''SELECT season_common_lootbox_count,
+                                  season_rare_lootbox_count,
+                                  season_epic_lootbox_count,
+                                  season_legendary_lootbox_count 
+                           FROM lootbox 
+                           WHERE member_id = ? AND server_id = ?''')
+        for res in self.select(sql_retrieve, (member.id, server.id)):
+            season_lootboxes = res
+        return season_lootboxes
+
+    def get_total_lootbox(self, member, server):
+        sql_retrieve = ('''SELECT total_common_lootbox_count,
+                                  total_rare_lootbox_count,
+                                  total_epic_lootbox_count,
+                                  total_legendary_lootbox_count 
+                           FROM lootbox 
+                           WHERE member_id = ? AND server_id = ?''')
+        for res in self.select(sql_retrieve, (member.id, server.id)):
+            season_lootboxes = res
+        return season_lootboxes
+
+    def add_lootbox(self, member, server, rarity):
+        if rarity == 'common':
+            sql_update = ('''UPDATE lootbox 
+                            SET season_common_lootbox_count = season_common_lootbox_count + 1,
+                                total_common_lootbox_count = total_common_lootbox_count + 1
+                            WHERE member_id = ? AND server_id = ? ''')
+        if rarity == 'rare':
+            sql_update = ('''UPDATE lootbox 
+                            SET season_rare_lootbox_count = season_rare_lootbox_count + 1,
+                                total_rare_lootbox_count = total_rare_lootbox_count + 1
+                            WHERE member_id = ? AND server_id = ? ''')
+        if rarity == 'epic':
+            sql_update = ('''UPDATE lootbox 
+                            SET season_epic_lootbox_count = season_epic_lootbox_count + 1,
+                                total_epic_lootbox_count = total_epic_lootbox_count + 1
+                            WHERE member_id = ? AND server_id = ? ''')
+        if rarity == 'legendary':
+            sql_update = ('''UPDATE lootbox 
+                            SET season_legendary_lootbox_count = season_legendary_lootbox_count + 1,
+                                total_legendary_lootbox_count = total_legendary_lootbox_count + 1
+                            WHERE member_id = ? AND server_id = ? ''')
+        self.execute(sql_update, (member.id, server.id))
 
     # Multipliers
 

@@ -27,9 +27,14 @@ sql_create_multiplier_table = """ CREATE TABLE IF NOT EXISTS multiplier (
 sql_create_lootbox_table = """ CREATE TABLE IF NOT EXISTS lootbox (
                                     member_id TEXT NOT NULL,
                                     server_id TEXT NOT NULL,
+                                    season_common_lootbox_count INT DEFAULT 0,
+                                    season_rare_lootbox_count INT DEFAULT 0,
+                                    season_epic_lootbox_count INT DEFAULT 0,
+                                    season_legendary_lootbox_count INT DEFAULT 0,
                                     total_common_lootbox_count INT DEFAULT 0,
                                     total_rare_lootbox_count INT DEFAULT 0,
-                                    total_leg_lootbox_count INT DEFAULT 0,
+                                    total_epic_lootbox_count INT DEFAULT 0,
+                                    total_legendary_lootbox_count INT DEFAULT 0,
                                     FOREIGN KEY (member_id, server_id) REFERENCES members(member_id, server_id),
                                     PRIMARY KEY (member_id, server_id)                                  
                                     )"""

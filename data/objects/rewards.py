@@ -27,7 +27,7 @@ REWARDS = {
     ],
 
     # Instant rewards are not stored in inventory and applied to the user right away
-    'instant': {
+    'loot': {
 
         'common': [
 
@@ -185,7 +185,7 @@ REWARDS = {
 
         ],
 
-        'legendary': [
+        'epic': [
             {
                 'name': "Message Multiplier x 8",
                 'type': 'multiplier',
@@ -248,10 +248,14 @@ REWARDS = {
                 'target': 'voice',
                 'value': 10
             }
+        ],
 
+        'legendary' : [
+            {
 
+            }
 
-        ]
+        ]       
 
     },
 

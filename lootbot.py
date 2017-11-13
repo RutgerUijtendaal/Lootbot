@@ -46,6 +46,7 @@ class Lootbot(commands.Bot):
                     self.db.add_member(member)
 
     async def close(self):
+        log.info("Shutting down bot")
         self.db.close()
         await super().close()
 
@@ -91,7 +92,7 @@ class Lootbot(commands.Bot):
             if not member.bot:
                 self.db.add_member(member)
 
-    # Experience functions
+    # Progress functions
 
     async def award_experience(self, member, server, experience):
         """ Award experience of a type to user. Uses multipliers to calculate total experience gained """
@@ -112,34 +113,26 @@ class Lootbot(commands.Bot):
 
         self.db.update_experience(member, server, total_exp)
 
+        member_progress = self.db.get_member_progress(member, server)
+        if self.calculate_level(member_progress):
+            await self.award_level(member, server)
+
         return total_exp
 
-    # Lootbox functions
+    async def award_level(self, member, server):
+        """ Increment member level and give level award """ 
+        self.db.increment_level(member, server)
 
-    async def create_lootbox_reward(self, member, server, common=0, rare=0, legendary=0):
-        """ Collect lootboxes and create lootbox package. If no lootboxes are set a random rarity is rewarded
+    def calculate_level(self, member_progress):
+        """ Calculate if a level should be awarded if total experience is bigger than xp for next level """
+        level = member_progress[0] + 1
+        experience = member_progress[1]
+        if experience >= settings.LEVEL_BASE*((level*level)-level):
+            return True
+        return False
 
-        returns list: [[common, rare, legendary], [loots]]
 
-        """
-        rarity_count = [common, rare, legendary]
-        loots = []
-
-        if common + rare + legendary == 0:
-            rarity_count[self.roll_lootbox_rarity_int()] += 1
-
-        if rarity_count[0] > 0:
-            loots = loots + await self.collect_lootbox('common', rarity_count[0])
-        if rarity_count[1] > 0:
-            loots = loots + await self.collect_lootbox('rare', rarity_count[1])
-        if rarity_count[2] > 0:
-            loots = loots + await self.collect_lootbox('legendary', rarity_count[2])
-
-        total_exp = await self.process_loot(member, server, loots)
-
-        reward_summary = [rarity_count, loots, total_exp]
-
-        return reward_summary
+    # Dailies
 
     async def complete_daily(self, member, server, daily):
         """ Complete a daily for a member. Update daily status and give reward """
@@ -150,15 +143,85 @@ class Lootbot(commands.Bot):
         if daily['reward_type'] == 'lootbox':
             common = daily['reward_count'] if daily['reward_rarity'] == 'common' else 0
             rare = daily['reward_count'] if daily['reward_rarity'] == 'rare' else 0
+            epic = daily['reward_count'] if daily['reward_rarity'] == 'epic' else 0
             legendary = daily['reward_count'] if daily['reward_rarity'] == 'legendary' else 0
 
             reward_summary = await self.create_lootbox_reward(
-                member, server, common=common, rare=rare, legendary=legendary)
+                member, server, common=common, rare=rare, epic=epic, legendary=legendary)
 
             message = messages.create_daily_message(
                 self.db, member, server, reward_summary, daily)
 
             await self.say_lootbot_channel(server, message)
+
+    # Lootbox
+
+    async def create_lootbox_reward(self, member, server, common=0, rare=0, epic=0, legendary=0):
+        """ Collect lootboxes and create lootbox package. If no lootboxes are set a random rarity is rewarded
+
+        returns list: [[common, rare, legendary], [loots], total_exp]
+
+        """
+        rarity_count = [common, rare, epic, legendary]
+        loots = []
+
+        if common + rare + epic + legendary == 0:
+            rarity_count[self.roll_lootbox_rarity_int()] += 1
+
+        if rarity_count[0] > 0:
+            loots = loots + await self.collect_lootbox(member, server, 'common', rarity_count[0])
+        if rarity_count[1] > 0:
+            loots = loots + await self.collect_lootbox(member, server, 'rare', rarity_count[1])
+        if rarity_count[2] > 0:
+            loots = loots + await self.collect_lootbox(member, server, 'epic', rarity_count[2])
+        if rarity_count[3] > 0:
+            loots = loots + await self.collect_lootbox(member, server, 'legendary', rarity_count[2])
+
+        total_exp = await self.process_loot(member, server, loots)
+
+        reward_summary = [rarity_count, loots, total_exp]
+
+        return reward_summary
+
+    async def collect_lootbox(self, member, server, rarity=None, count=1):
+        """ Collects loot for a rarity and number of lootboxes
+
+        rarity: 'common', 'rare', 'epic','legendary'. None defaults to a random rarity
+
+        """
+        loots = []
+
+        if rarity is None:
+            rarity = self.roll_lootbox_rarity()
+
+        for _ in range(count):
+            for loot in self.collect_loot(rarity):
+                loots.append(loot)
+
+        self.db.add_lootbox(member, server, rarity)
+
+        return loots
+
+    def roll_lootbox(self):
+        """ Roll to check if a lootbox should be awarded. Chance is 1/lootbox_chance. """
+        lootbox = random.randint(1, self.lb_settings['lootbox_chance'])
+        if lootbox == 1:
+            return True
+        return False
+
+    def roll_lootbox_rarity_int(self):
+        """ Roll for rarity. Returns '0', '1', '2', '3'. """
+        length = len(self.lootbox_rarity)
+        rarity_index = random.randint(0, length - 1)
+        return self.lootbox_rarity[rarity_index]
+
+    def roll_lootbox_rarity_string(self):
+        """ Roll for rarity. Returns 'common', 'rare', 'epic' or 'legendary'. """
+        rarity_strings = ('common', 'rare', 'epic','legendary')
+        rarity = self.roll_lootbox_rarity_int()
+        return rarity_strings[rarity]
+
+    # Loot
 
     async def process_loot(self, member, server, loots):
         """ Cycle through the loots and add rewards to the user """
@@ -184,33 +247,18 @@ class Lootbot(commands.Bot):
 
         return total_exp
 
-    async def collect_lootbox(self, rarity=None, count=1):
-        """ Collects loot for a rarity and number of lootboxes
+        return total_exp
 
-        rarity: 'common', 'rare', 'legendary'. None defaults to a random rarity
-
-        """
-        loots = []
-
-        if rarity is None:
-            rarity = self.roll_lootbox_rarity()
-
-        for _ in range(count):
-            for loot in self.collect_instant_set_rarity(rarity):
-                loots.append(loot)
-
-        return loots
-
-    def collect_instant_set_rarity(self, rarity):
-        """ Collect loot of type instant for set rarity. Yields a dictionary object of loot.
+    def collect_loot(self, rarity):
+        """ Collect loot of type loot for set rarity. Yields a dictionary object of loot.
 
         rarity: 'common', 'rare', 'legendary'
 
         """
-        for _ in range(self.lb_settings['instant_loot_counter']):
+        for _ in range(self.lb_settings['loot_counter']):
             reward_index = random.randint(
-                0, len(self.rewards['instant'][rarity]) - 1)
-            loot = self.rewards['instant'][rarity][reward_index]
+                0, len(self.rewards['loot'][rarity]) - 1)
+            loot = self.rewards['loot'][rarity][reward_index]
             yield loot
 
     def collect_item(self):
@@ -221,39 +269,24 @@ class Lootbot(commands.Bot):
             loot = self.rewards['item'][reward_index]
             yield loot
 
-    def roll_lootbox(self):
-        """ Roll to check if a lootbox should be awarded. Chance is 1/lootbox_chance. """
-        lootbox = random.randint(1, self.lb_settings['lootbox_chance'])
-        if lootbox == 1:
-            return True
-        return False
-
-    def roll_lootbox_rarity_int(self):
-        """ Roll for rarity. Returns '0', '1' or '2'. """
-        length = len(self.lootbox_rarity)
-        rarity_index = random.randint(0, length - 1)
-        return self.lootbox_rarity[rarity_index]
-
-    def roll_lootbox_rarity_string(self):
-        """ Roll for rarity. Returns 'common', 'rare' or 'legendary'. """
-        rarity_strings = ('common', 'rare', 'legendary')
-        rarity = self.roll_lootbox_rarity_int()
-        return rarity_strings[rarity]
 
     # Bot functions
 
     async def say_lootbot_channel(self, server, message):
+        """ Send message to BOT_CHANNEL of specified server """
         for channel in server.channels:
             if channel.name == settings.BOT_CHANNEL:
                 await self.send_message(channel, message)
 
     async def say_global(self, message):
+        """ Send message to BOT_CHANNEL for every server in the bot """
         for server in self.servers:
             for channel in server.channels:
                 if channel.name == settings.BOT_CHANNEL:
                     await self.send_message(channel, message)
 
     async def set_daily_reset(self):
+        """ Set a timer for 4 A.M. the next day. Calls reset_dailies when timer fires """
         x = datetime.today()
         # Get seconds till tomorrow 4 A.M.
         y = x.replace(day=x.day + 1, hour=4, minute=0, second=0, microsecond=0)
@@ -263,6 +296,7 @@ class Lootbot(commands.Bot):
         log.info("Daily reset set for %s", y)
 
     async def reset_dailies(self):
+        """ Reset the dailies, announce and start timer for next day """
         self.db.reset_dailies()
         log.info("Reset dailies")
         await self.say_global("Dailies have been reset")
@@ -274,7 +308,9 @@ class Lootbot(commands.Bot):
             self.lootbox_rarity.append(0)
         for _ in range(self.lb_settings['rare_chance']):
             self.lootbox_rarity.append(1)
-        for _ in range(self.lb_settings['legendary_chance']):
+        for _ in range(self.lb_settings['epic_chance']):
             self.lootbox_rarity.append(2)
+        for _ in range(self.lb_settings['legendary_chance']):
+            self.lootbox_rarity.append(3)
         log.info("Created lootbox rarity array of length %s",
                  str(len(self.lootbox_rarity)))

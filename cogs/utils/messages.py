@@ -1,4 +1,6 @@
 import random
+import settings
+import math
 from data import strings
 
 
@@ -65,9 +67,13 @@ def _create_lootbox_summary(rarity_count):
     elif rarity_count[1] == 1:
         message += str(rarity_count[1]) + " rare Lootbox\n"
     if rarity_count[2] > 1:
-        message += str(rarity_count[2]) + " legendary Lootboxes\n"
+        message += str(rarity_count[2]) + " epic Lootboxes\n"
     elif rarity_count[2] == 1:
-        message += str(rarity_count[2]) + " legendary Lootbox\n"
+        message += str(rarity_count[2]) + " epic Lootbox\n"
+    if rarity_count[3] > 1:
+        message += str(rarity_count[3]) + " legendary Lootboxes\n"
+    elif rarity_count[3] == 1:
+        message += str(rarity_count[3]) + " legendary Lootbox\n"
 
     return message
 
@@ -102,12 +108,29 @@ def _create_user_summary(db, message_settings, member, server, loots, gained_exp
             "\n  Voice:       " + str(new_multipliers[2]) + (" " * (7 - len(str(new_multipliers[2])))) + "(+" + str(add_multipliers[2]) + ")")
 
     if message_settings[3]:
-        progress = db.get_member_progress(member, server)
+        member_progress = db.get_member_progress(member, server)
+        level = member_progress[0]   
+        experience = member_progress[1]       
+                                     
+        # Level % progress
+        level_exp = experience - _get_exp_level(level)                          # Subtract from xp for next level to get xp for this level
+        next_level = _get_exp_next_level(level)                                 # Get the experience required for the next level
+        level_progress = math.ceil((level_exp/next_level) * 100)     # (current_xp/next_level_xp) * 100
+        
         message += (
             "\n\nProgress:" +
-            "\n  Level:       " + str(progress[0]) +
-            "\n  Experience:  " + str(progress[1]) + (" " * (7 - len(str(progress[1])))) + "(+" + str(gained_exp) + ")")
+            "\n  Level:       " + str(level) + 
+            "\n  Next Level:  " + str(level_exp) + (" " * (7 - len(str(level_exp)))) + "(" + str(level_progress) +  " %)" +
+            "\n  Total Exp:   " + str(experience) + (" " * (7 - len(str(experience)))) + "(+" + str(gained_exp) + ")")
 
     message += "```"
 
     return message
+
+def _get_exp_level(level):
+    level_exp = 100 * ((level*level)-level)
+    return level_exp
+
+def _get_exp_next_level(level):
+    next_level = _get_exp_level(level+1) - _get_exp_level(level) 
+    return next_level 
