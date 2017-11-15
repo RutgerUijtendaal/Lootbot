@@ -186,7 +186,7 @@ def _create_user_summary(db, message_settings, member, server, loots, gained_exp
 
 
 def _get_exp_level(level):
-    level_exp = 100 * (level * level)
+    level_exp = settings.LEVEL_BASE * (level * level)
     return level_exp
 
 
