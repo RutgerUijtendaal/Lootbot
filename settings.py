@@ -13,6 +13,7 @@ BOT_CHANNEL = "lootbot"
 LEVEL_BASE = 100
 
 # Lootbox
+
 LOOTBOX_EMOJI = [
     # TODO: Create on join server and use those instead
     ":lootbox_common:379684019564183552",
@@ -22,11 +23,26 @@ LOOTBOX_EMOJI = [
 ]
 
 LOOTBOX_SETTINGS = {
-    'instant_loot_counter': 2,      # Instant reward count per lootbox
+    'loot_counter': 2,              # Instant reward count per lootbox
     'item_loot_counter': 1,         # Item reward count per item chance
     'lootbox_chance': 1,            # Chance is 1/lootbox_chance
-    'common_chance': 11,             # Rarity chance form an array to pick from
-    'rare_chance': 6,               # Chance for a rarity is rarity_chance/array_length
-    'epic_chance': 2,
+    'common_chance': 0,#12,            # Rarity chance form an array to pick from
+    'rare_chance': 0,#7,               # Chance for a rarity is rarity_chance/array_length
+    'epic_chance': 0,#2,
     'legendary_chance': 1
 }
+
+# Game
+
+GAME_TIMER = 300                    # Time in seconds to award users for being in game
+
+GAMES_CHECK_WHITELIST = False
+GAMES_WHITELIST = [
+    'Overwatch',
+    'Hearthstone',
+    'Warframe'
+]
+
+# Voice
+
+VOICE_TIMER = 300

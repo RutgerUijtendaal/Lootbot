@@ -21,7 +21,7 @@ REWARDS = {
             'name': "Voice Base Experience",
             'type': 'experience',
             'target': 'voice',
-            'value': 1
+            'value': 2
         }
 
     ],
@@ -32,26 +32,70 @@ REWARDS = {
         'common': [
 
             {
-                'name': "Message Experience 5",
+                'name': "Message Experience 2",
                 'type': 'experience',
                 'target': 'message',
-                'value': 5
+                'value': 2
             },
 
 
             {
-                'name': "Message Experience 10",
+                'name': "Message Experience 3",
                 'type': 'experience',
                 'target': 'message',
-                'value': 10
+                'value': 3
+            },
+
+            {
+                'name': "Message Experience 4",
+                'type': 'experience',
+                'target': 'message',
+                'value': 4
+            },
+
+            {
+                'name': "Game Experience 2",
+                'type': 'experience',
+                'target': 'game',
+                'value': 2
             },
 
 
             {
-                'name': "Message Experience 15",
+                'name': "Game Experience 3",
                 'type': 'experience',
-                'target': 'message',
-                'value': 15
+                'target': 'game',
+                'value': 3
+            },
+
+
+            {
+                'name': "Game Experience 4",
+                'type': 'experience',
+                'target': 'game',
+                'value': 4
+            },
+
+            {
+                'name': "Voice Experience 2",
+                'type': 'experience',
+                'target': 'voice',
+                'value': 2
+            },
+
+
+            {
+                'name': "Voice Experience 3",
+                'type': 'experience',
+                'target': 'voice',
+                'value': 3
+            },
+
+            {
+                'name': "Voice Experience 4",
+                'type': 'experience',
+                'target': 'voice',
+                'value': 4
             },
 
             {
@@ -120,6 +164,75 @@ REWARDS = {
         ],
 
         'rare': [
+
+            {
+                'name': "Message Experience 5",
+                'type': 'experience',
+                'target': 'message',
+                'value': 5
+            },
+
+
+            {
+                'name': "Message Experience 6",
+                'type': 'experience',
+                'target': 'message',
+                'value': 6
+            },
+
+
+            {
+                'name': "Message Experience 7",
+                'type': 'experience',
+                'target': 'message',
+                'value': 7
+            },
+
+            {
+                'name': "Game Experience 5",
+                'type': 'experience',
+                'target': 'game',
+                'value': 5
+            },
+
+
+            {
+                'name': "Game Experience 6",
+                'type': 'experience',
+                'target': 'game',
+                'value': 6
+            },
+
+
+            {
+                'name': "Game Experience 7",
+                'type': 'experience',
+                'target': 'game',
+                'value': 7
+            },
+
+            {
+                'name': "Voice Experience 5",
+                'type': 'experience',
+                'target': 'voice',
+                'value': 5
+            },
+
+
+            {
+                'name': "Voice Experience 6",
+                'type': 'experience',
+                'target': 'voice',
+                'value': 6
+            },
+
+            {
+                'name': "Voice Experience 7",
+                'type': 'experience',
+                'target': 'voice',
+                'value': 7
+            },
+
             {
                 'name': "Message Multiplier x 5",
                 'type': 'multiplier',
@@ -186,6 +299,75 @@ REWARDS = {
         ],
 
         'epic': [
+
+            {
+                'name': "Message Experience 8",
+                'type': 'experience',
+                'target': 'message',
+                'value': 8
+            },
+
+
+            {
+                'name': "Message Experience 9",
+                'type': 'experience',
+                'target': 'message',
+                'value': 9
+            },
+
+
+            {
+                'name': "Message Experience 10",
+                'type': 'experience',
+                'target': 'message',
+                'value': 10
+            },
+
+            {
+                'name': "Game Experience 8",
+                'type': 'experience',
+                'target': 'game',
+                'value': 8
+            },
+
+
+            {
+                'name': "Game Experience 9",
+                'type': 'experience',
+                'target': 'game',
+                'value': 9
+            },
+
+
+            {
+                'name': "Game Experience 10",
+                'type': 'experience',
+                'target': 'game',
+                'value': 10
+            },
+
+            {
+                'name': "Voice Experience 8",
+                'type': 'experience',
+                'target': 'voice',
+                'value': 8
+            },
+
+
+            {
+                'name': "Voice Experience 9",
+                'type': 'experience',
+                'target': 'voice',
+                'value': 9
+            },
+
+            {
+                'name': "Voice Experience 10",
+                'type': 'experience',
+                'target': 'voice',
+                'value': 10
+            },
+
             {
                 'name': "Message Multiplier x 8",
                 'type': 'multiplier',
@@ -250,17 +432,23 @@ REWARDS = {
             }
         ],
 
-        'legendary' : [
+        'item': [
             {
+                'name': "Placeholder_1",
+                'type': 'item'
+            },
 
+            {
+                'name': "Placeholder_2",
+                'type': 'item'
+            },
+
+            {
+                'name': "Placeholder_2",
+                'type': 'item'
             }
 
-        ]       
-
-    },
-
-    # Items are stored with an identifier string in the users inventory
-    'item': {
+        ]
 
     }
 

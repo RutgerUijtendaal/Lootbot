@@ -51,4 +51,5 @@ auth.json
 *.pyc
 *.log
 *.db
+*.sh
 .vscode/settings.json

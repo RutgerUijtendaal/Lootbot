@@ -39,12 +39,12 @@ sql_create_lootbox_table = """ CREATE TABLE IF NOT EXISTS lootbox (
                                     PRIMARY KEY (member_id, server_id)                                  
                                     )"""
 
-sql_create_time_table = """ CREATE TABLE IF NOT EXISTS time (
+sql_create_counter_table = """ CREATE TABLE IF NOT EXISTS counter (
                                     member_id TEXT NOT NULL,
                                     server_id TEXT NOT NULL,
-                                    game_time INT DEFAULT 0,
-                                    voice_time INT DEFAULT 0,
-                                    message_time INT DEFAULT 0,
+                                    message_counter INT DEFAULT 0,
+                                    game_counter INT DEFAULT 0,
+                                    voice_counter INT DEFAULT 0,
                                     FOREIGN KEY (member_id, server_id) REFERENCES members(member_id, server_id),
                                     PRIMARY KEY (member_id, server_id)                                   
                                     )"""
@@ -52,18 +52,28 @@ sql_create_time_table = """ CREATE TABLE IF NOT EXISTS time (
 sql_create_daily_table = """ CREATE TABLE IF NOT EXISTS daily (
                                     member_id TEXT NOT NULL,
                                     server_id TEXT NOT NULL,
-                                    first_random_lootbox INT DEFAULT 0,
-                                    first_game INT DEFAULT 0,
-                                    first_voice INT DEFAULT 0,
+                                    daily_message INT DEFAULT 0,
+                                    daily_game INT DEFAULT 0,
+                                    daily_voice INT DEFAULT 0,
                                     FOREIGN KEY (member_id, server_id) REFERENCES members(member_id, server_id),
                                     PRIMARY KEY (member_id, server_id)                                   
                                     )"""
+
+sql_create_weekly_table = """ CREATE TABLE IF NOT EXISTS weekly (
+                                    member_id TEXT NOT NULL,
+                                    server_id TEXT NOT NULL,
+                                    weekly_message INT DEFAULT 0,
+                                    weekly_game INT DEFAULT 0,
+                                    weekly_voice INT DEFAULT 0,
+                                    FOREIGN KEY (member_id, server_id) REFERENCES members(member_id, server_id),
+                                    PRIMARY KEY (member_id, server_id)                                   
+                                    )"""                                    
 
 sql_create_settings_table = """ CREATE TABLE IF NOT EXISTS settings (
                                     member_id TEXT NOT NULL,
                                     server_id TEXT NOT NULL,
                                     message_mentions INT DEFAULT 0,
-                                    message_loot INT DEFAULT 0,
+                                    message_loot INT DEFAULT 1,
                                     message_multipliers INT DEFAULT 1,
                                     message_score INT DEFAULT 1,
                                     FOREIGN KEY (member_id, server_id) REFERENCES members(member_id, server_id),
@@ -75,7 +85,8 @@ table_creation = [
     sql_create_member_table,
     sql_create_multiplier_table,
     sql_create_lootbox_table,
-    sql_create_time_table,
+    sql_create_counter_table,
     sql_create_daily_table,
+    sql_create_weekly_table,
     sql_create_settings_table
 ]

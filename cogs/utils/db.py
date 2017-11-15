@@ -104,9 +104,11 @@ class Database(Thread, metaclass=SingletonType):
         self.execute(sql, (member.id, member.server.id))
         sql = '''INSERT OR IGNORE INTO lootbox(member_id, server_id) VALUES(?,?)'''
         self.execute(sql, (member.id, member.server.id))
-        sql = '''INSERT OR IGNORE INTO time(member_id, server_id) VALUES(?,?)'''
+        sql = '''INSERT OR IGNORE INTO counter(member_id, server_id) VALUES(?,?)'''
         self.execute(sql, (member.id, member.server.id))
         sql = '''INSERT OR IGNORE INTO daily(member_id, server_id) VALUES(?,?)'''
+        self.execute(sql, (member.id, member.server.id))
+        sql = '''INSERT OR IGNORE INTO weekly(member_id, server_id) VALUES(?,?)'''
         self.execute(sql, (member.id, member.server.id))
         sql = '''INSERT OR IGNORE INTO settings(member_id, server_id) VALUES(?,?)'''
         self.execute(sql, (member.id, member.server.id))
@@ -115,9 +117,9 @@ class Database(Thread, metaclass=SingletonType):
         sql_update = '''UPDATE member SET experience = experience + ? WHERE member_id = ? AND server_id = ?'''
         self.execute(sql_update, (experience, member.id, server.id))
 
-    def increment_level(self, member, server):
-        sql_update = '''UPDATE member SET level = level + 1 WHERE member_id = ? AND server_id = ?'''
-        self.execute(sql_update, (member.id, server.id))
+    def set_level(self, member, server, level):
+        sql_update = '''UPDATE member SET level = ? WHERE member_id = ? AND server_id = ?'''
+        self.execute(sql_update, (level, member.id, server.id))
 
     def get_member_progress(self, member, server):
         sql_retrieve = '''SELECT level, experience FROM member WHERE member_id = ? AND server_id = ?'''
@@ -214,15 +216,43 @@ class Database(Thread, metaclass=SingletonType):
             multipliers = res
         return multipliers
 
+    # Counters
+
+    def get_counters(self, member, server):
+        sql_retrieve = '''SELECT message_counter, game_counter, voice_counter FROM counter WHERE member_id = ? AND server_id = ?'''
+        for res in self.select(sql_retrieve, (member.id, server.id)):
+            counters = res
+        return counters
+
+    def set_message_counter(self, member, server, message_counter):
+
+        sql_update = '''UPDATE counter SET message_counter = message_counter + ? WHERE member_id = ? AND server_id = ?'''
+        self.execute(sql_update, (message_counter, member.id, server.id))
+
+    def set_game_counter(self, member, server, game_counter):
+
+        sql_update = '''UPDATE counter SET game_counter = game_counter + ? WHERE member_id = ? AND server_id = ?'''
+        self.execute(sql_update, (game_counter, member.id, server.id))
+
+    def set_voice_counter(self, member, server, voice_counter):
+
+        sql_update = '''UPDATE counter SET voice_counter = voice_counter + ? WHERE member_id = ? AND server_id = ?'''
+        self.execute(sql_update, (voice_counter, member.id, server.id))
+
+    def reset_counters(self):
+        sql_update = (''' UPDATE counter
+                          SET   message_counter = 0, 
+                                game_counter = 0,
+                                voice_counter = 0, ''')
+        self.execute(sql_update)
+
     # Dailies
 
-    def get_first_random_lootbox(self, member, server):
-        sql_retrieve = '''SELECT first_random_lootbox FROM daily WHERE member_id = ? AND server_id = ?'''
+    def get_dailies(self, member, server):
+        sql_retrieve = '''SELECT daily_message, daily_game, daily_voice FROM daily WHERE member_id = ? AND server_id = ?'''
         for res in self.select(sql_retrieve, (member.id, server.id)):
-            multipliers = res[0]
-        if multipliers:
-            return True
-        return False
+            dailies = res
+        return dailies
 
     def set_daily(self, member, server, column, completed):
 
@@ -232,9 +262,30 @@ class Database(Thread, metaclass=SingletonType):
 
     def reset_dailies(self):
         sql_update = (''' UPDATE daily
-                          SET   first_random_lootbox = 0,
-                                first_game = 0,
-                                first_voice = 0 ''')
+                          SET   daily_message= 0,
+                                daily_game = 0,
+                                daily_voice = 0 ''')
+        self.execute(sql_update)
+
+    # Weeklies
+
+    def get_weeklies(self, member, server):
+        sql_retrieve = '''SELECT weekly_message, weekly_game, weekly_voice FROM weekly WHERE member_id = ? AND server_id = ?'''
+        for res in self.select(sql_retrieve, (member.id, server.id)):
+            weeklies = res
+        return weeklies
+
+    def set_weekly(self, member, server, column, completed):
+
+        sql_update = '''UPDATE weekly SET ''' + column + \
+            ''' = ? WHERE member_id = ? AND server_id = ?'''
+        self.execute(sql_update, (completed, member.id, server.id))
+
+    def reset_weeklies(self):
+        sql_update = (''' UPDATE weekly
+                          SET   weekly_message = 0,
+                                weekly_game = 0,
+                                weekly_voice = 0 ''')
         self.execute(sql_update)
 
     # User Settings
