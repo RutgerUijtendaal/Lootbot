@@ -91,6 +91,8 @@ class Lootbot(commands.Bot):
 
             # Award experience points for message
             await self.award_experience(member, server, self.rewards['experience'][0])
+        else:
+            await self.process_commands(ctx)
 
     async def on_member_update(self, bmember, amember):
         # If member launches a game
@@ -157,18 +159,22 @@ class Lootbot(commands.Bot):
 
         member_progress = self.db.get_member_progress(member, server)
 
-        if self.calculate_level(member_progress):
-            level = member_progress[0] + 1
-            level_reward = self.get_level_reward(level)
-            common = 1 if level_reward == 'common' else 0
-            rare = 1 if level_reward == 'rare' else 0
-            epic = 1 if level_reward == 'epic' else 0
-            legendary = 1 if level_reward == 'legendary' else 0
+        rewards = [0, 0, 0, 0]
 
-            await self.award_level(member, server, level)
+        if self.calculate_level(member_progress):
+            while self.calculate_level(member_progress):
+                level = member_progress[0] + 1
+                level_reward = self.get_level_reward(level)
+                rewards[0] += 1 if level_reward == 'common' else 0
+                rewards[1] += 1 if level_reward == 'rare' else 0
+                rewards[2] += 1 if level_reward == 'epic' else 0
+                rewards[3] += 1 if level_reward == 'legendary' else 0
+
+                await self.award_level(member, server, level)
+                member_progress = self.db.get_member_progress(member, server)
 
             reward_summary = await self.create_lootbox_reward(
-                member, server, common=common, rare=rare, epic=epic, legendary=legendary)
+                member, server, common=rewards[0], rare=rewards[1], epic=rewards[2], legendary=rewards[3])
 
             message = messages.create_level_message(
                 self.db, member, server, reward_summary, level)
@@ -402,14 +408,14 @@ class Lootbot(commands.Bot):
         Chance takes into consideration lootboxes earned today and how many rolls you did without getting a lootbox
 
         """
-        pity_timer = self.db.get_counters(member, server)[3]
+        pity_counter = self.db.get_counters(member, server)[3]
         daily_boxes = self.db.get_dailies(member, server)[3]
 
         lootbox_chance = self.lb_settings['lootbox_chance']
         pity_modifer = self.lb_settings['pity_modifier']
         boxes_modifier = self.lb_settings['boxes_modifier']
 
-        high_end = math.ceil(lootbox_chance * (pity_modifer**pity_timer))
+        high_end = math.ceil(lootbox_chance * (pity_modifer**pity_counter))
         high_end = math.ceil(boxes_modifier ** (daily_boxes * daily_boxes))
 
         if high_end < 4:
@@ -417,11 +423,11 @@ class Lootbot(commands.Bot):
 
         lootbox = random.randint(1, high_end)
         if lootbox == 1:
-            self.db.reset_pity_timer(member, server)
+            self.db.reset_pity_counter(member, server)
             self.db.set_daily_boxes(member, server, 1)
             return True
 
-        self.db.set_pity_timer(member, server, 1)
+        self.db.set_pity_counter(member, server, 1)
 
         return False
 

@@ -219,14 +219,14 @@ class Database(Thread, metaclass=SingletonType):
     # Counters
 
     def get_counters(self, member, server):
-        sql_retrieve = '''SELECT message_counter, game_counter, voice_counter, pity_timer FROM counter WHERE member_id = ? AND server_id = ?'''
+        sql_retrieve = '''SELECT message_counter, game_counter, voice_counter, pity_counter FROM counter WHERE member_id = ? AND server_id = ?'''
         for res in self.select(sql_retrieve, (member.id, server.id)):
             counters = res
         return counters
 
-    def set_pity_timer(self, member, server, pity_counter):
+    def set_pity_counter(self, member, server, pity_counter):
 
-        sql_update = '''UPDATE counter SET pity_timer = pity_timer + ? WHERE member_id = ? AND server_id = ?'''
+        sql_update = '''UPDATE counter SET pity_counter = pity_counter + ? WHERE member_id = ? AND server_id = ?'''
         self.execute(sql_update, (pity_counter, member.id, server.id))
 
     def set_message_counter(self, member, server, message_counter):
@@ -244,9 +244,9 @@ class Database(Thread, metaclass=SingletonType):
         sql_update = '''UPDATE counter SET voice_counter = voice_counter + ? WHERE member_id = ? AND server_id = ?'''
         self.execute(sql_update, (voice_counter, member.id, server.id))
 
-    def reset_pity_timer(self, member, server):
+    def reset_pity_counter(self, member, server):
         sql_update = (''' UPDATE counter
-                          SET pity_timer = 0
+                          SET pity_counter = 0
                           WHERE member_id = ? AND server_id = ?''')
         self.execute(sql_update, (member.id, server.id))
 
@@ -255,7 +255,7 @@ class Database(Thread, metaclass=SingletonType):
                           SET   message_counter = 0, 
                                 game_counter = 0,
                                 voice_counter = 0,
-                                pity_timer = 0, ''')
+                                pity_counter = 0, ''')
         self.execute(sql_update)
 
     # Dailies
@@ -343,7 +343,7 @@ class Database(Thread, metaclass=SingletonType):
         else:
             return False
 
-        # User Settings
+    # User Settings
 
     def set_message_mentions(self, member, server, mentions):
 

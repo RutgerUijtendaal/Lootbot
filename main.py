@@ -12,9 +12,9 @@ Cookie clicker within Discord. Do what you normally do and earn points.
 Be lucky and earn a lootbox to earn more points!
 '''
 
-initial_extensions = {
-
-}
+initial_extensions = (
+    "cogs.inventory",
+)
 
 
 def setup_logging():

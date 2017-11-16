@@ -25,12 +25,12 @@ LOOTBOX_EMOJI = [
 LOOTBOX_SETTINGS = {
     'loot_counter': 2,              # Instant reward count per lootbox
     'item_loot_counter': 1,         # Item reward count per item chance
-    'lootbox_chance': 145,          # Chance is 1/lootbox_chance
-    'pity_modifier': 0.935,         # Create a curve to inc drop chance with pity timer
-    'boxes_modifier': 1.5,
-    'common_chance': 12,            # Rarity chance form an array to pick from
-    'rare_chance': 7,               # Chance for a rarity is rarity_chance/array_length
-    'epic_chance': 2,
+    'lootbox_chance': 1,            # Chance is 1/lootbox_chance
+    'pity_modifier': 0.94,          # Create a curve to inc drop chance with pity timer
+    'boxes_modifier': 1.05,
+    'common_chance': 0, #12,            # Rarity chance form an array to pick from
+    'rare_chance': 0, #7,               # Chance for a rarity is rarity_chance/array_length
+    'epic_chance': 0, #2,
     'legendary_chance': 1
 }
 

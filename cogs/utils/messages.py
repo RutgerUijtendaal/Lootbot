@@ -238,9 +238,9 @@ def _create_user_summary(db, message_settings, member, server, loots, gained_exp
             if loot['target'] == 'message':
                 add_multipliers[0] += loot['value']
             if loot['target'] == 'game':
-                add_multipliers[0] += loot['value']
+                add_multipliers[1] += loot['value']
             if loot['target'] == 'voice':
-                add_multipliers[0] += loot['value']
+                add_multipliers[2] += loot['value']
 
     if message_settings[2]:
         new_multipliers = db.get_multipliers(member, server)

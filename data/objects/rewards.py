@@ -470,9 +470,13 @@ REWARDS = {
 
             {
                 'item_id': 2,
-                'name': "Placeholder_2",
-                'description': "",
+                'name': "",
                 'type': 'item',
+                'description': "",
+                'reward_text': "",
+                'flavour_text': "",
+                'show_user': True,
+                'user_name': "",
                 'function': award_epic_server
             },
 
