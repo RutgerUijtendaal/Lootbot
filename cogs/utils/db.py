@@ -219,10 +219,15 @@ class Database(Thread, metaclass=SingletonType):
     # Counters
 
     def get_counters(self, member, server):
-        sql_retrieve = '''SELECT message_counter, game_counter, voice_counter FROM counter WHERE member_id = ? AND server_id = ?'''
+        sql_retrieve = '''SELECT message_counter, game_counter, voice_counter, pity_timer FROM counter WHERE member_id = ? AND server_id = ?'''
         for res in self.select(sql_retrieve, (member.id, server.id)):
             counters = res
         return counters
+
+    def set_pity_timer(self, member, server, pity_counter):
+
+        sql_update = '''UPDATE counter SET pity_timer = pity_timer + ? WHERE member_id = ? AND server_id = ?'''
+        self.execute(sql_update, (pity_counter, member.id, server.id))
 
     def set_message_counter(self, member, server, message_counter):
 
@@ -239,17 +244,24 @@ class Database(Thread, metaclass=SingletonType):
         sql_update = '''UPDATE counter SET voice_counter = voice_counter + ? WHERE member_id = ? AND server_id = ?'''
         self.execute(sql_update, (voice_counter, member.id, server.id))
 
+    def reset_pity_timer(self, member, server):
+        sql_update = (''' UPDATE counter
+                          SET pity_timer = 0
+                          WHERE member_id = ? AND server_id = ?''')
+        self.execute(sql_update, (member.id, server.id))
+
     def reset_counters(self):
         sql_update = (''' UPDATE counter
                           SET   message_counter = 0, 
                                 game_counter = 0,
-                                voice_counter = 0, ''')
+                                voice_counter = 0,
+                                pity_timer = 0, ''')
         self.execute(sql_update)
 
     # Dailies
 
     def get_dailies(self, member, server):
-        sql_retrieve = '''SELECT daily_message, daily_game, daily_voice FROM daily WHERE member_id = ? AND server_id = ?'''
+        sql_retrieve = '''SELECT daily_message, daily_game, daily_voice, daily_boxes FROM daily WHERE member_id = ? AND server_id = ?'''
         for res in self.select(sql_retrieve, (member.id, server.id)):
             dailies = res
         return dailies
@@ -260,11 +272,17 @@ class Database(Thread, metaclass=SingletonType):
             ''' = ? WHERE member_id = ? AND server_id = ?'''
         self.execute(sql_update, (completed, member.id, server.id))
 
+    def set_daily_boxes(self, member, server, boxes):
+        sql_update = (''' UPDATE daily
+                          SET daily_boxes = daily_boxes + 1
+                          WHERE member_id = ? AND server_id = ? ''')
+
     def reset_dailies(self):
         sql_update = (''' UPDATE daily
                           SET   daily_message= 0,
                                 daily_game = 0,
-                                daily_voice = 0 ''')
+                                daily_voice = 0,
+                                daily_boxes = 0 ''')
         self.execute(sql_update)
 
     # Weeklies
@@ -288,7 +306,44 @@ class Database(Thread, metaclass=SingletonType):
                                 weekly_voice = 0 ''')
         self.execute(sql_update)
 
-    # User Settings
+    # Inventory
+
+    def get_items(self, member, server):
+
+        items = []
+        sql_retrieve = '''SELECT item_id FROM inventory WHERE member_id = ? AND server_id = ?'''
+        for res in self.select(sql_retrieve, (member.id, server.id)):
+            items.append(res[0])
+        if items:
+            return items
+        return None
+
+    def add_item(self, member, server, item_id):
+
+        items = self.get_items(member, server)
+        if items:
+            count = len(items)
+        else:
+            count = 0
+
+        if count < settings.INVENTORY_SIZE:
+            sql_insert = '''INSERT INTO inventory(member_id, server_id, item_id) VALUES(?,?,?)'''
+            self.execute(sql_insert, (member.id, server.id, item_id))
+            return True
+        return False
+
+    def remove_item(self, member, server, item_id):
+
+        items = self.get_items(member, server)
+        if items:
+            if item_id in items:
+                sql_insert = '''DELETE FROM inventory WHERE member_id = ?, server_id = ?, item_id = ?'''
+                self.execute(sql_insert, (member.id, server.id, item_id))
+                return True
+        else:
+            return False
+
+        # User Settings
 
     def set_message_mentions(self, member, server, mentions):
 

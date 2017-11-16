@@ -39,7 +39,7 @@ QUESTS = {
     'weekly': [
         {
             'name': "World Wants You To Slow Down",
-            'type' : 'weekly',
+            'type': 'weekly',
             'description': "Type 200 messages",
             'goal_value': 200,
             'reward_type': 'lootbox',
@@ -50,7 +50,7 @@ QUESTS = {
 
         {
             'name': "Just One More Turn",
-            'type' : 'weekly',
+            'type': 'weekly',
             'description': "Play games for 6 hours",
             'goal_value': 360,
             'reward_type': 'lootbox',
@@ -61,7 +61,7 @@ QUESTS = {
 
         {
             'name': "Ok enough chit-chat",
-            'type' : 'weekly',
+            'type': 'weekly',
             'description': "Spend two hours in voice chat with someone else",
             'goal_value': 120,
             'reward_type': 'lootbox',

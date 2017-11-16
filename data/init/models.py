@@ -8,7 +8,7 @@ sql_create_member_table = """ CREATE TABLE IF NOT EXISTS member (
                                     name TEXT NOT NULL,
                                     server_id TEXT NOT NULL,
                                     experience INTEGER DEFAULT 0,
-                                    level INTEGER DEFAULT 1,
+                                    level INTEGER DEFAULT 0,
                                     rested INTEGER DEFAULT 0,
                                     FOREIGN KEY (server_id) REFERENCES servers(server_id),
                                     PRIMARY KEY (member_id, server_id)
@@ -45,6 +45,7 @@ sql_create_counter_table = """ CREATE TABLE IF NOT EXISTS counter (
                                     message_counter INT DEFAULT 0,
                                     game_counter INT DEFAULT 0,
                                     voice_counter INT DEFAULT 0,
+                                    pity_counter INT DEFAULT 0,
                                     FOREIGN KEY (member_id, server_id) REFERENCES members(member_id, server_id),
                                     PRIMARY KEY (member_id, server_id)                                   
                                     )"""
@@ -55,6 +56,7 @@ sql_create_daily_table = """ CREATE TABLE IF NOT EXISTS daily (
                                     daily_message INT DEFAULT 0,
                                     daily_game INT DEFAULT 0,
                                     daily_voice INT DEFAULT 0,
+                                    daily_boxes INT DEFAULT 0,
                                     FOREIGN KEY (member_id, server_id) REFERENCES members(member_id, server_id),
                                     PRIMARY KEY (member_id, server_id)                                   
                                     )"""
@@ -67,7 +69,14 @@ sql_create_weekly_table = """ CREATE TABLE IF NOT EXISTS weekly (
                                     weekly_voice INT DEFAULT 0,
                                     FOREIGN KEY (member_id, server_id) REFERENCES members(member_id, server_id),
                                     PRIMARY KEY (member_id, server_id)                                   
-                                    )"""                                    
+                                    )"""
+
+sql_create_inventory_table = """ CREATE TABLE IF NOT EXISTS inventory (
+                                    member_id TEXT NOT NULL,
+                                    server_id TEXT NOT NULL,  
+                                    item_id INT default 0,
+                                    FOREIGN KEY (member_id, server_id) REFERENCES members(member_id, server_id)   
+                                    )"""
 
 sql_create_settings_table = """ CREATE TABLE IF NOT EXISTS settings (
                                     member_id TEXT NOT NULL,
@@ -88,5 +97,6 @@ table_creation = [
     sql_create_counter_table,
     sql_create_daily_table,
     sql_create_weekly_table,
+    sql_create_inventory_table,
     sql_create_settings_table
 ]

@@ -31,7 +31,7 @@ game_flavour = {
         "For grinding things to grind more things"
     ],
 
-    'Eternal Card Game' : [
+    'Eternal Card Game': [
         "For getting angry",
         "For drawing only power cards",
         "For playing late game decks"
@@ -42,3 +42,9 @@ game_flavour = {
         "For doing... whatever you do"
     ]
 }
+
+voice_flavour = [
+    "For being in voice chat.",
+    "For yelling way too loudly",
+    "For making all the right callouts"
+]

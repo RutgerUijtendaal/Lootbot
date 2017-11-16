@@ -3,6 +3,7 @@ import math
 import settings
 from data import strings
 
+
 def create_level_message(db, member, server, reward_summary, level):
     rarity_count = reward_summary[0]
     loots = reward_summary[1]
@@ -18,13 +19,16 @@ def create_level_message(db, member, server, reward_summary, level):
 
     message += _create_lootbox_summary(rarity_count)
 
-    message += "\n" + strings.level_flavour[random.randint(0, len(strings.level_flavour) - 1)] + ": " + str(level)
+    message += "\n" + strings.level_flavour[random.randint(
+        0, len(strings.level_flavour) - 1)] + ": " + str(level)
 
     message += "```"
 
-    message += _create_user_summary(db, message_settings, member, server, loots, gained_exp)
+    message += _create_user_summary(db, message_settings,
+                                    member, server, loots, gained_exp)
 
     return message
+
 
 def create_random_lootbox_message(db, member, server, reward_summary):
 
@@ -42,7 +46,9 @@ def create_random_lootbox_message(db, member, server, reward_summary):
 
     message += _create_lootbox_summary(rarity_count)
 
-    message += "\n" + strings.message_flavour[random.randint(0, len(strings.message_flavour) - 1)]
+    message += "\n" + \
+        strings.message_flavour[random.randint(
+            0, len(strings.message_flavour) - 1)]
     message += "```"
 
     message += _create_user_summary(db, message_settings,
@@ -72,7 +78,8 @@ def create_quest_message(db, member, server, reward_summary, quest, mention=Fals
     if quest['type'] == 'weekly':
         message += "\nFor completing weekly: '" + quest['name'] + "' ```"
 
-    message += _create_user_summary(db, message_settings, member, server, loots, gained_exp)
+    message += _create_user_summary(db, message_settings,
+                                    member, server, loots, gained_exp)
 
     return message
 
@@ -106,6 +113,86 @@ def create_game_message(db, member, server, reward_summary, show_loot=False):
 
     message += _create_user_summary(db, message_settings,
                                     member, server, loots, gained_exp, show_loot=show_loot)
+
+    return message
+
+
+def create_voice_message(db, member, server, reward_summary, show_loot=False):
+
+    rarity_count = reward_summary[0]
+    loots = reward_summary[1]
+    gained_exp = reward_summary[2]
+
+    message_settings = db.get_message_settings(member, server)
+
+    message = ""
+    if message_settings[0]:
+        message += member.mention + " got: ```css\n"
+    else:
+        message += "```css\n" + member.name + " got:\n\n"
+
+    message += _create_lootbox_summary(rarity_count)
+
+    message += "\n" + strings.voice_flavour[random.randint(
+        0, len(strings.voice_flavour) - 1)]
+
+    message += "```"
+
+    message += _create_user_summary(db, message_settings,
+                                    member, server, loots, gained_exp, show_loot=show_loot)
+
+    return message
+
+
+def create_item_add_error_message(member, item):
+    message = "```diff\n"
+
+    message += "- # Failed to item: " + \
+        item['name'] + " to user: " + member.name + "."
+
+    message += "\n\nYour inventory is probably full, use some of those items."
+
+    message += "```"
+
+    return message
+
+
+def create_item_use_message(db, member, server, item, reward_summary=None, show_loot=False):
+
+    message = ""
+
+    message_settings = db.get_message_settings(member, server)
+
+    if message_settings[0]:
+        message += member.mention + " got: ```css\n"
+    else:
+        message += "```css\n" + member.name + " got:\n\n"
+
+    if reward_summary is not None:
+        rarity_count = reward_summary[0]
+        loots = reward_summary[1]
+        gained_exp = reward_summary[2]
+
+        message += _create_lootbox_summary(rarity_count)
+
+        message += _create_user_summary(db, message_settings,
+                                        member, server, loots, gained_exp, show_loot=show_loot)
+
+    else:
+        message += item['reward_text']
+
+    if item['show_user']:
+        message += "From " + item['user'] + 'using' + item['name']
+    else:
+        message += "From using: " + item['name'] + "\n\n"
+
+    message += item['flavour_text']
+
+    message += "```"
+
+    if reward_summary is not None:
+        message += _create_user_summary(db, message_settings,
+                                        member, server, loots, gained_exp, show_loot=show_loot)
 
     return message
 
@@ -170,7 +257,7 @@ def _create_user_summary(db, message_settings, member, server, loots, gained_exp
 
         # Level % progress
         # Subtract from xp for next level to get xp for this level
-        level_exp = experience - _get_exp_level(level)
+        level_exp = (experience - _get_exp_level(level))
         next_level = _get_exp_next_level(level)
         level_progress = math.ceil((level_exp / next_level) * 100)
 

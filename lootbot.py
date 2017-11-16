@@ -1,5 +1,6 @@
 import logging
 import random
+import math
 from datetime import datetime
 from threading import Timer
 
@@ -33,6 +34,7 @@ class Lootbot(commands.Bot):
         self.daily_timer = None
         self.weekly_timer = None
         self.game_timer = None
+        self.voice_timer = None
         # Setup game/voice users
         self.game_users = []
         self.voice_users = []
@@ -52,6 +54,8 @@ class Lootbot(commands.Bot):
                     self.db.add_member(member)
                     if member.game is not None:
                         self.add_game_user(member, server)
+                    if member.voice.voice_channel is not None:
+                        self.add_voice_user(member, server)
 
     async def close(self):
         log.info("Shutting down bot")
@@ -120,9 +124,6 @@ class Lootbot(commands.Bot):
             self.game_users = list(
                 filter(lambda x: x[0] != amember.id and x[1] != amember.server.id, self.game_users))
 
-    async def on_voice_state_update(self, bmember, amember):
-        pass
-
     async def on_member_join(self, member):
         if not member.bot:
             self.db.add_member(member)
@@ -133,18 +134,6 @@ class Lootbot(commands.Bot):
             if not member.bot:
                 self.db.add_member(member)
 
-    # Voice and Game Timers
-
-    async def set_game_timer(self):
-        game_timer_seconds = settings.GAME_TIMER
-
-        self.game_timer = Timer(game_timer_seconds, self.process_game_users)
-
-    async def set_voice_timer(self):
-        voice_timer_seconds = settings.GAME_TIMER
-
-        self.voice_timer = Timer(voice_timer_seconds, self.process_voice_users)
-    
     # Progress functions
 
     async def award_experience(self, member, server, experience):
@@ -162,7 +151,7 @@ class Lootbot(commands.Bot):
                 total_exp += exp
             if experience['target'] == 'voice':
                 exp = multipliers[2] * experience['value']
-                total_exp += exp 
+                total_exp += exp
 
         self.db.update_experience(member, server, total_exp)
 
@@ -180,8 +169,9 @@ class Lootbot(commands.Bot):
 
             reward_summary = await self.create_lootbox_reward(
                 member, server, common=common, rare=rare, epic=epic, legendary=legendary)
-            
-            message = messages.create_level_message(self.db, member, server, reward_summary, level)
+
+            message = messages.create_level_message(
+                self.db, member, server, reward_summary, level)
             await self.say_lootbot_channel(server, message)
 
         return total_exp
@@ -189,7 +179,6 @@ class Lootbot(commands.Bot):
     async def award_level(self, member, server, level):
         """ Increment member level and give level award """
         self.db.set_level(member, server, level)
-
 
     def calculate_level(self, member_progress):
         """ Calculate if a level should be awarded if total experience is bigger than xp for next level """
@@ -204,8 +193,8 @@ class Lootbot(commands.Bot):
     async def process_game_users(self):
         """ Get the game user list and iterate through them, award lootboxes, experience, dailies and weeklies """
         for user in self.game_users:
-            member = self.get_member(user[0], user[1])
-            server = self.get_server(user[0], user[1])
+            member = self.get_member_object(user[0], user[1])
+            server = self.get_server_object(user[0], user[1])
             if self.roll_lootbox(member, server):
                 lootbox_rarity_int = self.roll_lootbox_rarity_int()
                 user[2][lootbox_rarity_int] += 1
@@ -225,43 +214,106 @@ class Lootbot(commands.Bot):
         # Start a new timer to process game users again
         await self.set_game_timer()
 
+    def add_game_user(self, member, server):
+        """ Add a game user to the list of users
+
+        game_user = [member.id, server.id, [
+            common, rare, epic, legendary], tick_counts]
+        """
+        self.game_users.append([member.id, server.id, [0, 0, 0, 0], 0])
+
+    async def set_game_timer(self):
+        game_timer_seconds = settings.GAME_TIMER
+
+        self.game_timer = Timer(game_timer_seconds, self.process_game_users)
+
     # Voice Functions
 
+    async def on_voice_state_update(self, bmember, amember):
+        """ Called whenever a member changes voice status
+
+        Check if the user joined or left a server and add/remove them from the active voice user list.
+        If a user left voice award possible reward for being in voice chat.
+        """
+        if bmember.voice.voice_channel is None and amember.voice.voice_channel is not None:
+            self.add_voice_user(amember, amember.server)
+
+        # When a user leaves voice chat check time and award points & lootboxes
+        if bmember.voice.voice_channel is not None and amember.voice.voice_channel is None:
+            box_earned = True
+            for user in self.voice_users:
+                if user[0] == bmember.id and user[1] == bmember.server.id:
+                    # Check if any Lootboxes were earned
+                    for box in user[2]:
+                        if box > 0:
+                            box_earned = True
+                    # Award Lootboxes
+                    if box_earned:
+                        boxes = user[2]
+                        reward_summary = await self.create_lootbox_reward(bmember, bmember.server, common=boxes[0], rare=boxes[1], epic=boxes[2], legendary=boxes[3])
+                        message = messages.create_voice_message(
+                            self.db, bmember, bmember.server, reward_summary, show_loot=True)
+                        await self.say_lootbot_channel(bmember.server, message)
+            # Filter the user out of the voice_users list
+            self.voice_users = list(
+                filter(lambda x: x[0] != amember.id and x[1] != amember.server.id, self.voice_users))
+
     async def process_voice_users(self):
-        """ Get the voice user list and iterate through them, award lootboxes, experience, dailies and weeklies"""
-        
+        """ Get the voice user list and iterate through them, award lootboxes, experience, dailies and weeklies
+
+        Voice rewards are only awarded when at least 2 people on a server are in voice
+        """
         for user in self.voice_users:
-            member = self.get_member(user[0], user[1])
-            server = self.get_server(user[0], user[1])
-            if self.roll_lootbox(member, server):
-                lootbox_rarity_int = self.roll_lootbox_rarity_int()
-                user[2][lootbox_rarity_int] += 1
-            user[3] += 1
-            # If the user played for more than daily req award daily
-            if (user[3] * settings.GAME_VOICE_TIMER / 60) >= self.quests['daily'][2]['goal_value']:
-                if self.db.get_dailies(member, server)[2] == 0:
-                    await self.complete_quest(member, server, self.quests['daily'][2])
-            # Add a tick to the game counter
-            self.db.set_voice_counter(member, server, 1)
-            voice_counter = self.db.get_counters(member, server)[2]
-            # If total play time this season is higher than weekly award weekly
-            if (voice_counter * settings.VOICE_TIMER / 60) >= self.quests['weekly'][2]['goal_value']:
-                if self.db.get_weeklies(member, server)[2] == 0:
-                    await self.complete_quest(member, server, self.quests['weekly'][2])
-        
-        #Start a new timer to process voice users again
+            member = self.get_member_object(user[0], user[1])
+            server = self.get_server_object(user[0], user[1])
+            if self.check_voice_users(server):
+                if self.roll_lootbox(member, server):
+                    lootbox_rarity_int = self.roll_lootbox_rarity_int()
+                    user[2][lootbox_rarity_int] += 1
+                user[3] += 1
+                # If the user played for more than daily req award daily
+                if (user[3] * settings.VOICE_TIMER / 60) >= self.quests['daily'][2]['goal_value']:
+                    if self.db.get_dailies(member, server)[2] == 0:
+                        await self.complete_quest(member, server, self.quests['daily'][2])
+                # Add a tick to the game counter
+                self.db.set_voice_counter(member, server, 1)
+                voice_counter = self.db.get_counters(member, server)[2]
+                # If total play time this season is higher than weekly award weekly
+                if (voice_counter * settings.VOICE_TIMER / 60) >= self.quests['weekly'][2]['goal_value']:
+                    if self.db.get_weeklies(member, server)[2] == 0:
+                        await self.complete_quest(member, server, self.quests['weekly'][2])
+
+        # Start a new timer to process voice users again
         await self.set_voice_timer()
 
-    async def check_voice_users(self, server):
-        """ Returns true if at least 2 people are in voice at the same time on a server """
+    def check_voice_users(self, server):
+        """ Returns True if at least 2 people are in voice at the same time on a server """
         voice_counter = 0
         for member in server.members:
-            if 
+            if member.voice.voice_channel is not None:
+                voice_counter += 1
+
+        if voice_counter >= 2:
+            return True
+        return False
+
+    def add_voice_user(self, member, server):
+        """ Add a game user to the list of users
+
+        game_user = [member.id, server.id, [
+            common, rare, epic, legendary], tick_counts]
+        """
+        self.voice_users.append([member.id, server.id, [0, 0, 0, 0], 0])
+
+    async def set_voice_timer(self):
+        voice_timer_seconds = settings.VOICE_TIMER
+
+        self.voice_timer = Timer(voice_timer_seconds, self.process_voice_users)
 
     # Dailies
 
     async def complete_quest(self, member, server, quest):
-        """ Complete a daily for a member. Update daily status and give reward """
+        """ Complete a quest for a member. Update quest status in database and give reward """
 
         # Determine reward
         if quest['reward_type'] == 'lootbox':
@@ -275,10 +327,12 @@ class Lootbot(commands.Bot):
 
         if quest['type'] == 'daily':
             self.db.set_daily(member, server, quest['database'], True)
-            message = messages.create_quest_message(self.db, member, server, reward_summary, quest, mention=False)
+            message = messages.create_quest_message(
+                self.db, member, server, reward_summary, quest, mention=False)
         elif quest['type'] == 'weekly':
             self.db.set_weekly(member, server, quest['database'], True)
-            message = messages.create_quest_message(self.db, member, server, reward_summary, quest, mention=True)
+            message = messages.create_quest_message(
+                self.db, member, server, reward_summary, quest, mention=True)
 
         await self.say_lootbot_channel(server, message)
 
@@ -324,7 +378,8 @@ class Lootbot(commands.Bot):
                 loots.append(loot)
 
         if item:
-            loots.append(self.collect_item())
+            for _ in range(count):
+                loots.append(self.collect_item())
 
         self.db.add_lootbox(member, server, rarity)
 
@@ -332,20 +387,42 @@ class Lootbot(commands.Bot):
 
     def get_level_reward(self, level):
         """" Picks reward rarity for a set level """
-        
-        if level%10 == 0:
+
+        if level % 10 == 0:
             return 'legendary'
-        elif level%5 == 0:
+        elif level % 5 == 0:
             return 'epic'
-        elif level%3 == 0:
+        elif level % 3 == 0:
             return 'rare'
         return 'common'
 
     def roll_lootbox(self, member, server):
-        """ Roll to check if a lootbox should be awarded. Chance is 1/lootbox_chance. """
-        lootbox = random.randint(1, self.lb_settings['lootbox_chance'])
+        """ Roll to check if a lootbox should be awarded. Chance is 1/lootbox_chance.
+
+        Chance takes into consideration lootboxes earned today and how many rolls you did without getting a lootbox
+
+        """
+        pity_timer = self.db.get_counters(member, server)[3]
+        daily_boxes = self.db.get_dailies(member, server)[3]
+
+        lootbox_chance = self.lb_settings['lootbox_chance']
+        pity_modifer = self.lb_settings['pity_modifier']
+        boxes_modifier = self.lb_settings['boxes_modifier']
+
+        high_end = math.ceil(lootbox_chance * (pity_modifer**pity_timer))
+        high_end = math.ceil(boxes_modifier ** (daily_boxes * daily_boxes))
+
+        if high_end < 4:
+            high_end = 1
+
+        lootbox = random.randint(1, high_end)
         if lootbox == 1:
+            self.db.reset_pity_timer(member, server)
+            self.db.set_daily_boxes(member, server, 1)
             return True
+
+        self.db.set_pity_timer(member, server, 1)
+
         return False
 
     def roll_lootbox_rarity_int(self):
@@ -365,6 +442,8 @@ class Lootbot(commands.Bot):
     async def process_loot(self, member, server, loots):
         """ Cycle through the loots and add rewards to the user """
 
+        total_exp = 0
+
         for loot in loots:
             if loot['type'] == 'multiplier':
                 if loot['target'] == 'message':
@@ -376,15 +455,37 @@ class Lootbot(commands.Bot):
                 elif loot['target'] == 'voice':
                     self.db.update_voice_multiplier(
                         member, server, loot['value'])
-
-        # Update experience after multipliers to benefit from them
-        total_exp = 0
-
-        for loot in loots:
+            # Update experience after multipliers to benefit from them
             if loot['type'] == 'experience':
                 total_exp += await self.award_experience(member, server, loot)
+            if loot['type'] == 'item':
+                item_added = self.db.add_item(member, server, loot['item_id'])
+                if not item_added:
+                    message = messages.create_item_add_error_message(
+                        member, loot)
+                    await self.say_lootbot_channel(server, message)
 
         return total_exp
+
+    async def process_item(self, member, server, item_id):
+        """ """
+        items = self.rewards['loot']['items']
+        inventory = self.db.get_items(member, server)
+
+        item = None
+        for _item in items:
+            if _item['item_id'] == item_id:
+                item = _item
+
+        if item or inventory is None:
+            return False
+
+        for _item_id in inventory:
+            if _item_id == item_id:
+                item['function'](self, member, server, item)
+                return True
+
+        return False
 
     def collect_loot(self, rarity):
         """ Collect loot of type loot for set rarity. Yields a dictionary object of loot.
@@ -407,32 +508,19 @@ class Lootbot(commands.Bot):
 
     # Bot functions
 
-    def add_game_user(self, member, server):
-        """ Add a game user to the list of users
-
-        game_user = [member.id, server.id, [common, rare, epic, legendary], tick_counts]
-        """
-        self.game_users.append([member.id, server.id, [0, 0, 0, 0], 0])
-
-
-    def add_voice_user(self, member, server):
-        """ Add a game user to the list of users
-
-        game_user = [member.id, server.id, [common, rare, epic, legendary], tick_counts]
-        """
-        self.voice_users.append([member.id, server.id, [0, 0, 0, 0], 0])
-
-    def get_member(self, member_id, server_id):
+    def get_member_object(self, member_id, server_id):
         for server in self.servers:
             for member in server.members:
                 if member.id == member_id and server.id == server_id:
                     return member
 
-    def get_server(self, member_id, server_id):
+    def get_server_object(self, member_id, server_id):
         for server in self.servers:
             for member in server.members:
                 if member.id == member_id and server.id == server_id:
                     return server
+
+    # Announcements
 
     async def say_lootbot_channel(self, server, message):
         """ Send message to BOT_CHANNEL of specified server """
@@ -444,6 +532,8 @@ class Lootbot(commands.Bot):
         """ Send message to BOT_CHANNEL for every server in the bot """
         for server in self.servers:
             await self.say_lootbot_channel(server, message)
+
+    # Daily Reset
 
     async def set_daily_reset(self):
         """ Set a timer for 4 A.M. the next day. Calls reset_dailies when timer fires """

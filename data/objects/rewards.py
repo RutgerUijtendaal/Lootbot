@@ -1,3 +1,26 @@
+import logging
+import cogs.utils.messages as messages
+
+log = logging.getLogger(__name__)
+
+# Item functions
+
+
+async def award_epic_server(bot, member, server, item):
+
+    item['user'] = member.name
+
+    for _member in server.members:
+        reward_summary = await bot.create_lootbox_reward(_member, server, epic=1)
+
+        message = messages.create_item_use_message(
+            bot.db, member, server, item, reward_summary=reward_summary)
+
+        bot.say_lootbox_channel(message, server)
+
+
+# Reward list
+
 REWARDS = {
 
     # Base Experience rewards
@@ -434,19 +457,25 @@ REWARDS = {
 
         'item': [
             {
-                'name': "Placeholder_1",
-                'type': 'item'
+                'item_id': 1,
+                'name': "",
+                'type': 'item',
+                'description': "",
+                'reward_text': "",
+                'flavour_text': "",
+                'show_user': True,
+                'user_name': "",
+                'function': award_epic_server
             },
 
             {
+                'item_id': 2,
                 'name': "Placeholder_2",
-                'type': 'item'
+                'description': "",
+                'type': 'item',
+                'function': award_epic_server
             },
 
-            {
-                'name': "Placeholder_2",
-                'type': 'item'
-            }
 
         ]
 
