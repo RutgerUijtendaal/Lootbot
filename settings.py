@@ -5,12 +5,21 @@ LOG_LEVEL = 'INFO'
 DATABASE_PATH = "data/lootbot.db"
 
 # Bot
+
+TRELLO_LINK = "https://trello.com/b/s52Fqf4L/lootbot"
+DESIGN_LINK = "https://docs.google.com/document/d/15CvsTLqlmZnjCEmZk3KYvYLlhpGEZPiwtM23TEF6enE/edit?usp=sharing"
+GITHUB_LINK = "https://github.com/RutgerUijtendaal/Lootbot"
+
 BOT_PREFIX = "$"
 BOT_CHANNEL = "lootbot"
+
+OWNER_ID = "186546645465432065"
 
 INITIAL_EXTENSIONS = (
     "cogs.cards",
     "cogs.user",
+    "cogs.bot",
+    "cogs.quests",
 )
 
 

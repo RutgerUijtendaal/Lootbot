@@ -45,7 +45,7 @@ class Lootbot(commands.Bot):
         log.info("Discord client ready")
         await self.add_all_servers()
         await self.set_daily_reset()
-        await self.set_season_reset()
+        await self.start_season()
         await self.set_message_timer()
         await self.set_game_timer()
         await self.set_voice_timer()
@@ -640,7 +640,6 @@ class Lootbot(commands.Bot):
     async def reset_season(self):
         """ Reset the dailies, announce and start timer for next day """
         for server in self.servers:
-            self.db.add_season_end(server)
             ranking = self.db.get_ranking(server)
             message = messages.create_ranking_message(ranking, body=True)
             await self.say_lootbot_channel(server, message)
@@ -648,22 +647,25 @@ class Lootbot(commands.Bot):
         log.info("Reset Season")
         asyncio.sleep(1)
         await self.say_global("Season has been reset.")
-        await self.set_season_reset()
+        await self.start_season()
 
-        asyncio.sleep(1)
+    async def start_season(self):
         cards = self.rewards['loot']['card']
         for server in self.servers:
-            message = "```js\nSeason starter cards:\n\n"
-            for member in server.members:
-                if not member.bot:
-                    card = [cards[random.randint(0, len(cards) - 1)]]
-                    await self.process_loot(member, server, card)
+            if self.db.get_season_number(server) == 0:
+                message = "```md\n# Season starter cards:\n\n"
+                for member in server.members:
+                    if not member.bot:
+                        card = [cards[random.randint(0, len(cards) - 1)]]
+                        await self.process_loot(member, server, card)
 
-                    message += member.name + " got card: \n"
-                    message += "\n  [" + card[0]['name'] + "]\n\n"
+                        message += member.name + " got card: \n"
+                        message += "\n<-  [" + card[0]['name'] + "]>\n\n"
 
-            message += "```"
-            await self.say_lootbot_channel(server, message)
+                message += "```"
+                await self.say_lootbot_channel(server, message)
+            self.db.add_season_end(server)
+        await self.set_season_reset()
 
     def init_lootbox_rarity(self):
         """ Initialize the rarity list. Chances are based on (rarity chance)/(total length). """

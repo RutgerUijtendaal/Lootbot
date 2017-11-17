@@ -82,7 +82,7 @@ sql_create_settings_table = """ CREATE TABLE IF NOT EXISTS settings (
                                     member_id TEXT NOT NULL,
                                     server_id TEXT NOT NULL,
                                     message_mentions INT DEFAULT 0,
-                                    message_loot INT DEFAULT 0,
+                                    message_loot INT DEFAULT 1,
                                     message_multipliers INT DEFAULT 1,
                                     message_score INT DEFAULT 1,
                                     FOREIGN KEY (member_id, server_id) REFERENCES members(member_id, server_id),

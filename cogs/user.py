@@ -34,10 +34,13 @@ class User:
         multipliers = self.bot.db.get_multipliers(member, server)
         progress = self.bot.db.get_member_progress(member, server)
 
-        message = "```js\n"
-        message += "User: " + ctx.message.author.name + " (" + str(progress[0]) + ")"
+        message = "```md\n"
+        message += "[" + ctx.message.author.name + \
+            "](" + str(progress[0]) + ")"
 
         message += messages.create_deck_message(deck)
+
+        message += "``````js\n"
 
         message += messages.create_lootbox_message(lootboxes)
 
@@ -52,11 +55,16 @@ class User:
     @commands.command(pass_context=True)
     async def deck(self, ctx):
         """ Lists the cards in your deck """
-        deck = self.bot.db.get_cards(
-            ctx.message.author, ctx.message.server)
 
-        message = "```js\n"
-        message += "User: " + ctx.message.author.name
+        member = ctx.message.author
+        server = ctx.message.server
+
+        deck = self.bot.db.get_cards(member, server)
+        progress = self.bot.db.get_member_progress(member, server)
+
+        message = "```md\n"
+        message += "[" + ctx.message.author.name + \
+            "](" + str(progress[0]) + ")"
 
         message += messages.create_deck_message(deck)
 

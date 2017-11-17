@@ -85,7 +85,7 @@ async def epic_mage_ring_function(bot, member, server, card):
     for _member in server.members:
         if not _member.bot:
             members.append(_member)
-            
+
     for x in range(2):
         if x == 0:
             _member = member
@@ -115,18 +115,13 @@ async def stacked_deck_function(bot, member, server, card):
         else:
             _member = members[random.randint(0, len(members) - 1)]
             members.remove(_member)
-        
+
         _card = [cards[random.randint(0, len(cards) - 1)]]
 
         await bot.process_loot(_member, server, _card)
-
+        card['reward_text'] = _card[0]['name']
         message = messages.create_card_use_message(
             bot.db, _member, server, card)
-
-        message += "```js\n"
-        message += "# Card:"
-        message += "\n  [" + _card[0]['name'] + "]"
-        message += "```"
 
         await bot.say_lootbot_channel(server, message)
 

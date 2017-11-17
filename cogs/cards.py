@@ -38,7 +38,7 @@ class Items:
         message = ctx.message.content[6:]
         card_name = message
 
-        message = "```js\n"
+        message = "```md\n"
 
         card = None
         for _card in self.bot.rewards['loot']['card']:
@@ -46,7 +46,7 @@ class Items:
                 card = _card
 
         if card is not None:
-            message += card['name'] + "\n"
+            message += "<-  [" + card['name'] + "]>\n"
             message += "    " + card['description'] + "\n"
             message += "```"
             await self.bot.say(message)
@@ -59,10 +59,11 @@ class Items:
 
         cards = self.bot.rewards['loot']['card']
 
-        message = "```js\n"
+        message = "```md\n"
 
         for card in cards:
-            message += str(card['card_id']) + ": " + card['name'] + "\n"
+            message += "<" + str(card['card_id']) + \
+                ": [" + card['name'] + "]>\n"
             message += "    " + card['description'] + "\n\n"
 
         message += "```"
