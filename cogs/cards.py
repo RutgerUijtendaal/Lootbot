@@ -1,3 +1,5 @@
+#!/usr/local/bin/python3
+
 import logging
 
 from cogs.utils import messages

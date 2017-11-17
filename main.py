@@ -6,11 +6,11 @@ import logging
 import settings
 from lootbot import Lootbot
 
-
 description = '''
 Lootbot 
 Use Discord to play the game. Collect Experience, Level up, get Lootboxes. Hate RNG.
 '''
+
 
 def setup_logging():
     # Set up discord logging levels
@@ -40,8 +40,8 @@ def main():
     bot = Lootbot(command_prefix=settings.BOT_PREFIX, description=description,
                   pm_help=None, help_attrs=help_attrs)
     auth = load_auth()
-    discord_token = auth['debug_token']
-    bot.client_id = auth['debug_client_id']
+    discord_token = auth['discord_token']
+    bot.client_id = auth['discord_client_id']
 
     for extension in settings.INITIAL_EXTENSIONS:
         try:

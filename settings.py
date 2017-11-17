@@ -1,3 +1,5 @@
+#!/usr/local/bin/python3
+
 # Program
 LOG_LEVEL = 'INFO'
 
@@ -31,21 +33,21 @@ LEVEL_BASE = 100
 
 LOOTBOX_EMOJI = [
     # TODO: Create on join server and use those instead
-    ":lootbox_common:379684019564183552",
-    ":lootbox_rare:379684022751723541",
-    ":lootbox_epic:379684022093217793",
-    ":lootbox_legendary:379684021820456960"
+    ":lootbox_common:381118736914186250",
+    ":lootbox_rare:381118738373541888",
+    ":lootbox_epic:381118737966956544",
+    ":lootbox_legendary:381118737849384961"
 ]
 
 LOOTBOX_SETTINGS = {
     'loot_counter': 2,              # Instant reward count per lootbox
     'card_loot_counter': 1,         # Item reward count per card chance
-    'lootbox_chance': 1,            # Chance is 1/lootbox_chance
+    'lootbox_chance': 100,            # Chance is 1/lootbox_chance
     'pity_modifier': 0.94,          # Create a curve to inc drop chance with pity timer
     'boxes_modifier': 1.05,
-    'common_chance': 0,  # 12,            # Rarity chance form an array to pick from
-    'rare_chance': 0,  # 7,               # Chance for a rarity is rarity_chance/array_length
-    'epic_chance': 0,  # 2,
+    'common_chance': 12,            # Rarity chance form an array to pick from
+    'rare_chance': 7,               # Chance for a rarity is rarity_chance/array_length
+    'epic_chance': 2,
     'legendary_chance': 1
 }
 

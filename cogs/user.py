@@ -1,3 +1,5 @@
+#!/usr/local/bin/python3
+
 import logging
 import math
 
@@ -25,7 +27,7 @@ class User:
 
     @commands.command(pass_context=True)
     async def summary(self, ctx):
-        """ Return a summary of the user for this season """
+        """ List a summary of the user for this season """
         member = ctx.message.author
         server = ctx.message.server
 
@@ -47,6 +49,38 @@ class User:
         message += messages.create_multiplier_message(multipliers)
 
         message += messages.create_progress_message(progress)
+
+        message += "```"
+
+        await self.bot.say(message)
+
+    @commands.command(pass_context=True)
+    async def progress(self, ctx):
+        """ List your multipliers """
+        member = ctx.message.author
+        server = ctx.message.server
+
+        progress = self.bot.db.get_member_progress(member, server)
+
+        message = "```js\n"
+
+        message += messages.create_progress_message(progress)
+
+        message += "```"
+
+        await self.bot.say(message)
+
+    @commands.command(pass_context=True)
+    async def multipliers(self, ctx):
+        """ List your multipliers """
+        member = ctx.message.author
+        server = ctx.message.server
+
+        multipliers = self.bot.db.get_multipliers(member, server)
+
+        message = "```js\n"
+
+        message += messages.create_multiplier_message(multipliers)
 
         message += "```"
 

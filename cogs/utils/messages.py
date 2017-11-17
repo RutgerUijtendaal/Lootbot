@@ -1,3 +1,5 @@
+#!/usr/local/bin/python3
+
 import random
 import math
 import settings
@@ -71,7 +73,7 @@ def create_ranking_message(ranking, body=False):
     else:
         message = ""
 
-    message += "# Ranking"
+    message += "# Ranking\n"
     for x, member in enumerate(ranking):
         message += "\n  " + str(1 + x) + ": " + \
             member[0] + (" " * (10 - len(str(member[0]))))

@@ -1,3 +1,5 @@
+#!/usr/local/bin/python3
+
 sql_create_server_table = """ CREATE TABLE IF NOT EXISTS server (
                                     server_id TEXT PRIMARY KEY,
                                     name TEXT NOT NULL

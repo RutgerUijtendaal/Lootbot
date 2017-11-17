@@ -1,3 +1,5 @@
+#!/usr/local/bin/python3
+
 import logging
 import random
 import math
@@ -467,7 +469,7 @@ class Lootbot(commands.Bot):
         boxes_modifier = self.lb_settings['boxes_modifier']
 
         high_end = math.ceil(lootbox_chance * (pity_modifer**pity_counter))
-        high_end = math.ceil(boxes_modifier ** (daily_boxes * daily_boxes))
+        high_end += math.ceil(boxes_modifier ** (daily_boxes * daily_boxes))
 
         if high_end < 4:
             high_end = 1

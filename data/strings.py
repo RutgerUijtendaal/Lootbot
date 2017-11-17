@@ -1,3 +1,5 @@
+#!/usr/local/bin/python3
+
 level_flavour = [
     "For crawling their way to level",
     "For reaching level"

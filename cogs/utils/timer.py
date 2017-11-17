@@ -1,3 +1,5 @@
+#!/usr/local/bin/python3
+
 import asyncio
 import logging
 
@@ -16,7 +18,6 @@ class Timer:
             await self._callback()
         except Exception as e:
             log.exception("Timer Callback")
-
 
     def cancel(self):
         self._task.cancel()
