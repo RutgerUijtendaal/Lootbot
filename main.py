@@ -8,15 +8,9 @@ from lootbot import Lootbot
 
 
 description = '''
-Cookie clicker within Discord. Do what you normally do and earn points. 
-Be lucky and earn a lootbox to earn more points!
+Lootbot 
+Use Discord to play the game. Collect Experience, Level up, get Lootboxes. Hate RNG.
 '''
-
-initial_extensions = (
-    "cogs.cards",
-    "cogs.user",
-)
-
 
 def setup_logging():
     # Set up discord logging levels
@@ -49,7 +43,7 @@ def main():
     discord_token = auth['debug_token']
     bot.client_id = auth['debug_client_id']
 
-    for extension in initial_extensions:
+    for extension in settings.INITIAL_EXTENSIONS:
         try:
             bot.load_extension(extension)
         except Exception:

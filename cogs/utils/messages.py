@@ -16,11 +16,11 @@ def create_deck_message(deck):
             if len(deck) > x:
                 for card in rewards.REWARDS['loot']['card']:
                     if card['card_id'] == deck[x]:
-                        message += card['name']
+                        message += "[" + card['name'] + "]"
             else:
-                message += "Empty"
+                message += "-"
         else:
-            message += "\n  " + str(x + 1) + ": Empty"
+            message += "\n  " + str(x + 1) + ": -"
 
     return message
 
@@ -93,13 +93,16 @@ def create_level_message(db, member, server, reward_summary, level):
     loots = reward_summary[1]
     gained_exp = reward_summary[2]
 
+    member_progress = db.get_member_progress(member, server)
+    level = member_progress[0]
+
     message_settings = db.get_message_settings(member, server)
 
     message = ""
     if message_settings[0]:
-        message += member.mention + " got: ```css\n"
+        message += member.mention + " (" + str(level) + ") got:```css\n"
     else:
-        message += "```css\n" + member.name + " got:\n\n"
+        message += "```css\n" + member.name + " (" + str(level) + ") got:\n\n"
 
     message += _create_lootbox_summary(rarity_count)
 
@@ -120,13 +123,16 @@ def create_random_lootbox_message(db, member, server, reward_summary):
     loots = reward_summary[1]
     gained_exp = reward_summary[2]
 
+    member_progress = db.get_member_progress(member, server)
+    level = member_progress[0]
+
     message_settings = db.get_message_settings(member, server)
 
     message = ""
     if message_settings[0]:
-        message += member.mention + " got: ```css\n"
+        message += member.mention + " (" + str(level) + ") got:```css\n"
     else:
-        message += "```css\n" + member.name + " got:\n\n"
+        message += "```css\n" + member.name + " (" + str(level) + ") got:\n\n"
 
     message += _create_lootbox_summary(rarity_count)
 
@@ -147,13 +153,16 @@ def create_quest_message(db, member, server, reward_summary, quest, mention=Fals
     loots = reward_summary[1]
     gained_exp = reward_summary[2]
 
+    member_progress = db.get_member_progress(member, server)
+    level = member_progress[0]
+
     message_settings = db.get_message_settings(member, server)
 
     message = ""
     if message_settings[0] or mention:
-        message += member.mention + " got: ```css\n"
+        message += member.mention + " (" + str(level) + ") got:```css\n"
     else:
-        message += "```css\n" + member.name + " got:\n\n"
+        message += "```css\n" + member.name + " (" + str(level) + ") got:\n\n"
 
     message += _create_lootbox_summary(rarity_count)
 
@@ -174,13 +183,16 @@ def create_game_message(db, member, server, reward_summary, show_loot=False):
     loots = reward_summary[1]
     gained_exp = reward_summary[2]
 
+    member_progress = db.get_member_progress(member, server)
+    level = member_progress[0]
+
     message_settings = db.get_message_settings(member, server)
 
     message = ""
     if message_settings[0]:
-        message += member.mention + " got: ```css\n"
+        message += member.mention + " (" + str(level) + ") got:```css\n"
     else:
-        message += "```css\n" + member.name + " got:\n\n"
+        message += "```css\n" + member.name + " (" + str(level) + ") got:\n\n"
 
     message += _create_lootbox_summary(rarity_count)
 
@@ -207,13 +219,16 @@ def create_voice_message(db, member, server, reward_summary, show_loot=False):
     loots = reward_summary[1]
     gained_exp = reward_summary[2]
 
+    member_progress = db.get_member_progress(member, server)
+    level = member_progress[0]
+
     message_settings = db.get_message_settings(member, server)
 
     message = ""
     if message_settings[0]:
-        message += member.mention + " got: ```css\n"
+        message += member.mention + " (" + str(level) + ") got: ```css\n"
     else:
-        message += "```css\n" + member.name + " got:\n\n"
+        message += "```css\n" + member.name + " (" + str(level) + ") got:\n\n"
 
     message += _create_lootbox_summary(rarity_count)
 
@@ -241,16 +256,20 @@ def create_card_add_error_message(member, card):
     return message
 
 
-def create_card_use_message(db, member, server, card, total_exp=None, reward_summary=None, show_loot=False):
+def create_card_use_message(db, member, server, card, total_exp=None, reward_summary=None, show_loot=False, mention=False):
 
     message = ""
 
+    member_progress = db.get_member_progress(member, server)
+    level = member_progress[0]
+
     message_settings = db.get_message_settings(member, server)
 
-    if message_settings[0]:
-        message += member.mention + " got: ```css\n"
+    message = ""
+    if message_settings[0] or mention:
+        message += member.mention + " (" + str(level) + ") got: ```css\n"
     else:
-        message += "```css\n" + member.name + " got:\n\n"
+        message += "```css\n" + member.name + " (" + str(level) + ") got:\n\n"
 
     if reward_summary is not None:
         rarity_count = reward_summary[0]

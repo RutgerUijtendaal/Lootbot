@@ -8,6 +8,12 @@ DATABASE_PATH = "data/lootbot.db"
 BOT_PREFIX = "$"
 BOT_CHANNEL = "lootbot"
 
+INITIAL_EXTENSIONS = (
+    "cogs.cards",
+    "cogs.user",
+)
+
+
 # Experience
 
 LEVEL_BASE = 100
@@ -55,4 +61,4 @@ VOICE_TIMER = 60
 
 # deck
 
-DECK_SIZE = 5
+DECK_SIZE = 3

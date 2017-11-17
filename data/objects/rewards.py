@@ -81,14 +81,24 @@ async def pot_of_greed_function(bot, member, server, card):
 
 async def epic_mage_ring_function(bot, member, server, card):
     card['user_name'] = member.name
+    members = []
     for _member in server.members:
         if not _member.bot:
-            reward_summary = await bot.create_lootbox_reward(_member, server, common=0, rare=0, epic=1, legendary=0)
+            members.append(_member)
+            
+    for x in range(2):
+        if x == 0:
+            _member = member
+        else:
+            _member = members[random.randint(0, len(members) - 1)]
+            members.remove(_member)
 
-            message = messages.create_card_use_message(
-                bot.db, _member, server, card, reward_summary=reward_summary)
+        reward_summary = await bot.create_lootbox_reward(_member, server, common=0, rare=0, epic=1, legendary=0)
 
-            await bot.say_lootbot_channel(server, message)
+        message = messages.create_card_use_message(
+            bot.db, _member, server, card, reward_summary=reward_summary)
+
+        await bot.say_lootbot_channel(server, message)
 
 
 async def stacked_deck_function(bot, member, server, card):
@@ -99,9 +109,13 @@ async def stacked_deck_function(bot, member, server, card):
         if not _member.bot:
             members.append(_member)
 
-    for _ in range(2):
-        _member = members[random.randint(0, len(members) - 1)]
-        members.remove(_member)
+    for x in range(2):
+        if x == 0:
+            _member = member
+        else:
+            _member = members[random.randint(0, len(members) - 1)]
+            members.remove(_member)
+        
         _card = [cards[random.randint(0, len(cards) - 1)]]
 
         await bot.process_loot(_member, server, _card)
@@ -560,7 +574,7 @@ REWARDS = {
                 'type': 'card',
                 'description': "Award 100 Message Experience points to the user",
                 'reward_text': "Message Experience Points",
-                'flavour_text': "Eggs, Bacon, Sausage and Spam...",
+                'flavour_text': "~ Eggs, Bacon, Sausage and Spam... ~",
                 'show_user': False,
                 'user_name': "",
                 'function': spam_function
@@ -572,7 +586,7 @@ REWARDS = {
                 'type': 'card',
                 'description': "Award 100 Game Experience points to the user",
                 'reward_text': "Game Experience Points",
-                'flavour_text': "Squire, attend me!",
+                'flavour_text': "~ Squire, attend me! ~",
                 'show_user': False,
                 'user_name': "",
                 'function': npc_function
@@ -584,7 +598,7 @@ REWARDS = {
                 'type': 'card',
                 'description': "Award 100 Voice Experience points to the user",
                 'reward_text': "Voice Experience Points",
-                'flavour_text': "Winner of every shouting contest.",
+                'flavour_text': "~ Winner of every shouting contest. ~",
                 'show_user': False,
                 'user_name': "",
                 'function': booming_voice_function
@@ -596,7 +610,7 @@ REWARDS = {
                 'type': 'card',
                 'description': "Give the user 2 random lootboxes",
                 'reward_text': "",
-                'flavour_text': "It's been tournament illegal since 2005.",
+                'flavour_text': "~ It's been tournament illegal since 2005. ~",
                 'show_user': False,
                 'user_name': "",
                 'function': pot_of_greed_function
@@ -606,9 +620,9 @@ REWARDS = {
                 'card_id': 5,
                 'name': "Epic Mage Ring",
                 'type': 'card',
-                'description': "Give everyone on the server an epic Lootbox",
+                'description': "Give the user and one random member an Epic Lootbox",
                 'reward_text': "",
-                'flavour_text': "Screw the blue staff Jimmy, we're going for the epics.",
+                'flavour_text': "~ Screw the blue staff Jimmy, we're going for the epics. ~",
                 'show_user': True,
                 'user_name': "",
                 'function': epic_mage_ring_function
@@ -618,9 +632,9 @@ REWARDS = {
                 'card_id': 6,
                 'name': "Stacked Deck",
                 'type': 'card',
-                'description': "Give two random people on the server a card",
+                'description': "Give the user and one random member a card",
                 'reward_text': "A random card.",
-                'flavour_text': "A great Magician never reals his trick.",
+                'flavour_text': "~ A great Magician never reveals his trick. ~",
                 'show_user': True,
                 'user_name': "",
                 'function': stacked_deck_function

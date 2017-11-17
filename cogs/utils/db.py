@@ -357,7 +357,7 @@ class Database(Thread, metaclass=SingletonType):
                 season_number = res[0]
         return season_number
 
-    # deck
+    # Deck
 
     def get_cards(self, member, server):
 

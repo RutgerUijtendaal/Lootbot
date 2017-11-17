@@ -40,8 +40,8 @@ QUESTS = {
         {
             'name': "World Wants You To Slow Down",
             'type': 'weekly',
-            'description': "Type 200 messages",
-            'goal_value': 200,
+            'description': "Type 300 messages",
+            'goal_value': 300,
             'reward_type': 'lootbox',
             'reward_rarity': 'epic',
             'reward_count': 1,
@@ -51,16 +51,16 @@ QUESTS = {
         {
             'name': "Just One More Turn",
             'type': 'weekly',
-            'description': "Play games for 6 hours",
-            'goal_value': 360,
+            'description': "Play games for 5 hours",
+            'goal_value': 300,
             'reward_type': 'lootbox',
-            'reward_rarity': 'epic',
+            'reward_rarity': 'legendary',
             'reward_count': 1,
             'database': 'weekly_game'
         },
 
         {
-            'name': "Ok enough chit-chat",
+            'name': "Ok, enough chit-chat",
             'type': 'weekly',
             'description': "Spend two hours in voice chat with someone else",
             'goal_value': 120,

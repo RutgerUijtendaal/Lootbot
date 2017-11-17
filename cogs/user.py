@@ -35,7 +35,7 @@ class User:
         progress = self.bot.db.get_member_progress(member, server)
 
         message = "```js\n"
-        message += "User: " + ctx.message.author.name
+        message += "User: " + ctx.message.author.name + " (" + str(progress[0]) + ")"
 
         message += messages.create_deck_message(deck)
 
