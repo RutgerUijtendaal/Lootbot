@@ -1,7 +1,7 @@
 import logging
 import random
 import math
-from datetime import datetime
+import datetime
 from threading import Timer
 
 import asyncio
@@ -32,10 +32,12 @@ class Lootbot(commands.Bot):
         self.init_lootbox_rarity()
         # Setup timers
         self.daily_timer = None
-        self.weekly_timer = None
+        self.season_timer = None
+        self.message_timer = None
         self.game_timer = None
         self.voice_timer = None
         # Setup game/voice users
+        self.message_users = []
         self.game_users = []
         self.voice_users = []
 
@@ -43,6 +45,8 @@ class Lootbot(commands.Bot):
         log.info("Discord client ready")
         await self.add_all_servers()
         await self.set_daily_reset()
+        await self.set_season_reset()
+        await self.set_message_timer()
         await self.set_game_timer()
         await self.set_voice_timer()
 
@@ -64,35 +68,6 @@ class Lootbot(commands.Bot):
         self.voice_timer.cancel()
         self.daily_timer.cancel()
         await super().close()
-
-    async def on_message(self, ctx):
-        command = False
-        # Ignore rewards if it's a command
-        if ctx.content.startswith(settings.BOT_PREFIX):
-            command = True
-        if not ctx.author.bot and not command:
-            member = ctx.author
-            server = ctx.server
-
-            # If this is the first daily message from user complete daily
-            if self.db.get_dailies(member, server)[0] == 0:
-                await self.complete_quest(member, server, self.quests['daily'][0])
-
-            # Roll for a random lootbox
-            if self.roll_lootbox(member, server):
-                reward_summary = await self.create_lootbox_reward(member, server)
-                message = messages.create_random_lootbox_message(
-                    self.db, member, server, reward_summary)
-                # Add a reaction for the right rarity to the message
-                for x, rarity in enumerate(reward_summary[0]):
-                    if rarity > 0:
-                        await self.add_reaction(ctx, settings.LOOTBOX_EMOJI[x])
-                await self.say_lootbot_channel(server, message)
-
-            # Award experience points for message
-            await self.award_experience(member, server, self.rewards['experience'][0])
-        else:
-            await self.process_commands(ctx)
 
     async def on_member_update(self, bmember, amember):
         # If member launches a game
@@ -159,22 +134,22 @@ class Lootbot(commands.Bot):
 
         member_progress = self.db.get_member_progress(member, server)
 
-        rewards = [0, 0, 0, 0]
+        lootbox_reward = [0, 0, 0, 0]
 
         if self.calculate_level(member_progress):
             while self.calculate_level(member_progress):
                 level = member_progress[0] + 1
                 level_reward = self.get_level_reward(level)
-                rewards[0] += 1 if level_reward == 'common' else 0
-                rewards[1] += 1 if level_reward == 'rare' else 0
-                rewards[2] += 1 if level_reward == 'epic' else 0
-                rewards[3] += 1 if level_reward == 'legendary' else 0
+                lootbox_reward[0] += 1 if level_reward == 'common' else 0
+                lootbox_reward[1] += 1 if level_reward == 'rare' else 0
+                lootbox_reward[2] += 1 if level_reward == 'epic' else 0
+                lootbox_reward[3] += 1 if level_reward == 'legendary' else 0
 
                 await self.award_level(member, server, level)
                 member_progress = self.db.get_member_progress(member, server)
 
             reward_summary = await self.create_lootbox_reward(
-                member, server, common=rewards[0], rare=rewards[1], epic=rewards[2], legendary=rewards[3])
+                member, server, common=lootbox_reward[0], rare=lootbox_reward[1], epic=lootbox_reward[2], legendary=lootbox_reward[3])
 
             message = messages.create_level_message(
                 self.db, member, server, reward_summary, level)
@@ -193,6 +168,59 @@ class Lootbot(commands.Bot):
         if experience >= settings.LEVEL_BASE * (level * level):
             return True
         return False
+
+    # Message functions
+
+    async def on_message(self, ctx):
+        command = False
+        # Ignore rewards if it's a command
+        if ctx.content.startswith(settings.BOT_PREFIX):
+            command = True
+        if not ctx.author.bot and not command:
+            member = ctx.author
+            server = ctx.server
+            blocked = False
+            for user in self.message_users:
+                if user[0] == member.id and user[1] == server.id:
+                    blocked = True
+            # If this is the first daily message from user complete daily
+            if not blocked:
+                if self.db.get_dailies(member, server)[0] == 0:
+                    await self.complete_quest(member, server, self.quests['daily'][0])
+
+                # Roll for a random lootbox
+                if self.roll_lootbox(member, server):
+                    reward_summary = await self.create_lootbox_reward(member, server)
+                    message = messages.create_random_lootbox_message(
+                        self.db, member, server, reward_summary)
+                    # Add a reaction for the right rarity to the message
+                    for x, rarity in enumerate(reward_summary[0]):
+                        if rarity > 0:
+                            await self.add_reaction(ctx, settings.LOOTBOX_EMOJI[x])
+                    await self.say_lootbot_channel(server, message)
+
+                # Award experience points for message
+                await self.award_experience(member, server, self.rewards['experience'][0])
+                self.add_message_user(member, server)
+        else:
+            await self.process_commands(ctx)
+
+    async def process_message_users(self):
+        self.message_users.clear()
+        await self.set_message_timer()
+
+    def add_message_user(self, member, server):
+        """ Add a message user to the list of users that recently typed
+
+        game_user = [member.id, server.id]
+        """
+        self.message_users.append([member.id, server.id])
+
+    async def set_message_timer(self):
+        message_timer_seconds = settings.MESSAGE_TIMER
+
+        self.message_timer = Timer(
+            message_timer_seconds, self.process_message_users)
 
     # Game functions
 
@@ -216,6 +244,9 @@ class Lootbot(commands.Bot):
             if (game_counter * settings.GAME_TIMER / 60) >= self.quests['weekly'][1]['goal_value']:
                 if self.db.get_weeklies(member, server)[1] == 0:
                     await self.complete_quest(member, server, self.quests['weekly'][1])
+            # Award experience
+            experience = await self.award_experience(member, server, self.rewards['experience'][1])
+            self.db.update_experience(member, server, experience)
 
         # Start a new timer to process game users again
         await self.set_game_timer()
@@ -223,8 +254,7 @@ class Lootbot(commands.Bot):
     def add_game_user(self, member, server):
         """ Add a game user to the list of users
 
-        game_user = [member.id, server.id, [
-            common, rare, epic, legendary], tick_counts]
+        game_user = [member.id, server.id, [common, rare, epic, legendary], tick_counts]
         """
         self.game_users.append([member.id, server.id, [0, 0, 0, 0], 0])
 
@@ -288,6 +318,10 @@ class Lootbot(commands.Bot):
                 if (voice_counter * settings.VOICE_TIMER / 60) >= self.quests['weekly'][2]['goal_value']:
                     if self.db.get_weeklies(member, server)[2] == 0:
                         await self.complete_quest(member, server, self.quests['weekly'][2])
+                # Award experience
+                experience = await self.award_experience(
+                    member, server, self.rewards['experience'][2])
+                self.db.update_experience(member, server, experience)
 
         # Start a new timer to process voice users again
         await self.set_voice_timer()
@@ -316,7 +350,7 @@ class Lootbot(commands.Bot):
 
         self.voice_timer = Timer(voice_timer_seconds, self.process_voice_users)
 
-    # Dailies
+    # Quests
 
     async def complete_quest(self, member, server, quest):
         """ Complete a quest for a member. Update quest status in database and give reward """
@@ -363,7 +397,7 @@ class Lootbot(commands.Bot):
         if rarity_count[2] > 0:
             loots = loots + await self.collect_lootbox(member, server, 'epic', count=rarity_count[2])
         if rarity_count[3] > 0:
-            loots = loots + await self.collect_lootbox(member, server, 'epic', item=True, count=rarity_count[3])
+            loots = loots + await self.collect_lootbox(member, server, 'epic', card=True, count=rarity_count[3])
 
         total_exp = await self.process_loot(member, server, loots)
 
@@ -371,7 +405,7 @@ class Lootbot(commands.Bot):
 
         return reward_summary
 
-    async def collect_lootbox(self, member, server, rarity, item=False, count=1):
+    async def collect_lootbox(self, member, server, rarity, card=False, count=1):
         """ Collects loot for a rarity and number of lootboxes
 
         rarity: 'common', 'rare', 'epic','legendary'.
@@ -383,9 +417,18 @@ class Lootbot(commands.Bot):
             for loot in self.collect_loot(rarity):
                 loots.append(loot)
 
-        if item:
+        if card:
             for _ in range(count):
-                loots.append(self.collect_item())
+                loots.append(self.collect_card())
+
+        extra_card = random.randint(1, 10)
+        if extra_card == 1 and card is False:
+            extra_rarity = self.get_one_up_rarity(rarity)
+            if extra_rarity == 'card':
+                loots.append(self.collect_card())
+            else:
+                for loot in self.collect_loot(rarity, count=1):
+                    loots.append(loot)
 
         self.db.add_lootbox(member, server, rarity)
 
@@ -401,6 +444,14 @@ class Lootbot(commands.Bot):
         elif level % 3 == 0:
             return 'rare'
         return 'common'
+
+    def get_one_up_rarity(self, rarity):
+        if rarity == 'common':
+            return 'rare'
+        if rarity == 'rare':
+            return 'epic'
+        if rarity == 'epic':
+            return 'card'
 
     def roll_lootbox(self, member, server):
         """ Roll to check if a lootbox should be awarded. Chance is 1/lootbox_chance.
@@ -464,52 +515,59 @@ class Lootbot(commands.Bot):
             # Update experience after multipliers to benefit from them
             if loot['type'] == 'experience':
                 total_exp += await self.award_experience(member, server, loot)
-            if loot['type'] == 'item':
-                item_added = self.db.add_item(member, server, loot['item_id'])
-                if not item_added:
-                    message = messages.create_item_add_error_message(
+            # Add card to deck. If deck is full card is destroyed.
+            if loot['type'] == 'card':
+                card_added = self.db.add_card(member, server, loot['card_id'])
+                if not card_added:
+                    message = messages.create_card_add_error_message(
                         member, loot)
                     await self.say_lootbot_channel(server, message)
 
         return total_exp
 
-    async def process_item(self, member, server, item_id):
-        """ """
-        items = self.rewards['loot']['items']
-        inventory = self.db.get_items(member, server)
+    async def process_card(self, member, server, card_id):
+        """ Called by a user to consume an card
 
-        item = None
-        for _item in items:
-            if _item['item_id'] == item_id:
-                item = _item
+        Gets the card based on ID from the dictionary and calls the card function to consume
+        """
+        cards = self.rewards['loot']['card']
+        deck = self.db.get_cards(member, server)
 
-        if item or inventory is None:
+        card = None
+        for _card in cards:
+            if _card['card_id'] == card_id:
+                card = _card
+
+        if deck is None:
             return False
 
-        for _item_id in inventory:
-            if _item_id == item_id:
-                item['function'](self, member, server, item)
+        for _card_id in deck:
+            if _card_id == card_id:
+                await card['function'](self, member, server, card)
+                self.db.remove_card(member, server, card_id)
                 return True
 
         return False
 
-    def collect_loot(self, rarity):
+    def collect_loot(self, rarity, count=None):
         """ Collect loot of type loot for set rarity. Yields a dictionary object of loot.
 
         rarity: 'common', 'rare', 'epic', 'legendary'
-
         """
-        for _ in range(self.lb_settings['loot_counter']):
+        if count is None:
+            count = self.lb_settings['loot_counter']
+
+        for _ in range(count):
             reward_index = random.randint(
                 0, len(self.rewards['loot'][rarity]) - 1)
             loot = self.rewards['loot'][rarity][reward_index]
             yield loot
 
-    def collect_item(self):
-        """ Collect loot of type item for set rarity. Yields a dictionary object of loot."""
+    def collect_card(self):
+        """ Collect loot of type card for set rarity. Yields a dictionary object of loot."""
 
-        reward_index = random.randint(0, len(self.rewards['loot']['item']) - 1)
-        loot = self.rewards['loot']['item'][reward_index]
+        reward_index = random.randint(0, len(self.rewards['loot']['card']) - 1)
+        loot = self.rewards['loot']['card'][reward_index]
         return loot
 
     # Bot functions
@@ -543,7 +601,7 @@ class Lootbot(commands.Bot):
 
     async def set_daily_reset(self):
         """ Set a timer for 4 A.M. the next day. Calls reset_dailies when timer fires """
-        x = datetime.today()
+        x = datetime.datetime.today()
         # Get seconds till tomorrow 4 A.M.
         y = x.replace(day=x.day + 1, hour=4, minute=0, second=0, microsecond=0)
         delta = y - x
@@ -557,6 +615,39 @@ class Lootbot(commands.Bot):
         log.info("Reset dailies")
         await self.say_global("Dailies have been reset")
         await self.set_daily_reset()
+
+    # Season Reset
+
+    async def set_season_reset(self):
+        """ Set a timer for 4 A.M. the on wednesday. Calls reset_season when timer fires """
+        x = datetime.date.today()
+        if x.weekday() == 2:
+            x += datetime.timedelta(7)
+        else:
+            while x.weekday() != 2:
+                x += datetime.timedelta(1)
+
+        y = datetime.time(hour=4)
+
+        next_reset = datetime.datetime.combine(x, y)
+
+        delta = next_reset - datetime.datetime.today()
+        secs = delta.seconds
+
+        self.season_timer = Timer(secs, self.reset_season)
+        log.info("Season reset set for %s", next_reset)
+
+    async def reset_season(self):
+        """ Reset the dailies, announce and start timer for next day """
+        for server in self.servers:
+            self.db.add_season_end(server)
+            ranking = self.db.get_ranking(server)
+            message = messages.create_ranking_message(ranking, body=True)
+            await self.say_lootbot_channel(server, message)
+        self.db.reset_season()
+        log.info("Reset Season")
+        await self.say_global("Season has been reset")
+        # await self.set_season_reset()
 
     def init_lootbox_rarity(self):
         """ Initialize the rarity list. Chances are based on (rarity chance)/(total length). """

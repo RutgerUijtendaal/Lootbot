@@ -94,6 +94,13 @@ class Database(Thread, metaclass=SingletonType):
     def get_all_servers(self):
         pass
 
+    def get_ranking(self, server):
+        ranking = []
+        sql_retrieve = '''SELECT name, level, experience FROM member WHERE server_id = ? ORDER BY experience DESC'''
+        for res in self.select(sql_retrieve, (server.id,)):
+            ranking.append(res)
+        return ranking
+
     # Member
 
     def add_member(self, member):
@@ -133,8 +140,8 @@ class Database(Thread, metaclass=SingletonType):
         sql_retrieve = ('''SELECT season_common_lootbox_count,
                                   season_rare_lootbox_count,
                                   season_epic_lootbox_count,
-                                  season_legendary_lootbox_count 
-                           FROM lootbox 
+                                  season_legendary_lootbox_count
+                           FROM lootbox
                            WHERE member_id = ? AND server_id = ?''')
         for res in self.select(sql_retrieve, (member.id, server.id)):
             season_lootboxes = res
@@ -144,8 +151,8 @@ class Database(Thread, metaclass=SingletonType):
         sql_retrieve = ('''SELECT total_common_lootbox_count,
                                   total_rare_lootbox_count,
                                   total_epic_lootbox_count,
-                                  total_legendary_lootbox_count 
-                           FROM lootbox 
+                                  total_legendary_lootbox_count
+                           FROM lootbox
                            WHERE member_id = ? AND server_id = ?''')
         for res in self.select(sql_retrieve, (member.id, server.id)):
             season_lootboxes = res
@@ -153,22 +160,22 @@ class Database(Thread, metaclass=SingletonType):
 
     def add_lootbox(self, member, server, rarity):
         if rarity == 'common':
-            sql_update = ('''UPDATE lootbox 
+            sql_update = ('''UPDATE lootbox
                             SET season_common_lootbox_count = season_common_lootbox_count + 1,
                                 total_common_lootbox_count = total_common_lootbox_count + 1
                             WHERE member_id = ? AND server_id = ? ''')
         if rarity == 'rare':
-            sql_update = ('''UPDATE lootbox 
+            sql_update = ('''UPDATE lootbox
                             SET season_rare_lootbox_count = season_rare_lootbox_count + 1,
                                 total_rare_lootbox_count = total_rare_lootbox_count + 1
                             WHERE member_id = ? AND server_id = ? ''')
         if rarity == 'epic':
-            sql_update = ('''UPDATE lootbox 
+            sql_update = ('''UPDATE lootbox
                             SET season_epic_lootbox_count = season_epic_lootbox_count + 1,
                                 total_epic_lootbox_count = total_epic_lootbox_count + 1
                             WHERE member_id = ? AND server_id = ? ''')
         if rarity == 'legendary':
-            sql_update = ('''UPDATE lootbox 
+            sql_update = ('''UPDATE lootbox
                             SET season_legendary_lootbox_count = season_legendary_lootbox_count + 1,
                                 total_legendary_lootbox_count = total_legendary_lootbox_count + 1
                             WHERE member_id = ? AND server_id = ? ''')
@@ -210,7 +217,6 @@ class Database(Thread, metaclass=SingletonType):
         return voice_point_multiplier
 
     def get_multipliers(self, member, server):
-
         sql_retrieve = '''SELECT message_multiplier, game_multiplier, voice_multiplier FROM multiplier WHERE member_id = ? AND server_id = ?'''
         for res in self.select(sql_retrieve, (member.id, server.id)):
             multipliers = res
@@ -252,7 +258,7 @@ class Database(Thread, metaclass=SingletonType):
 
     def reset_counters(self):
         sql_update = (''' UPDATE counter
-                          SET   message_counter = 0, 
+                          SET   message_counter = 0,
                                 game_counter = 0,
                                 voice_counter = 0,
                                 pity_counter = 0, ''')
@@ -274,8 +280,9 @@ class Database(Thread, metaclass=SingletonType):
 
     def set_daily_boxes(self, member, server, boxes):
         sql_update = (''' UPDATE daily
-                          SET daily_boxes = daily_boxes + 1
+                          SET daily_boxes = daily_boxes + ?
                           WHERE member_id = ? AND server_id = ? ''')
+        self.execute(sql_update, (boxes, member.id, server.id))
 
     def reset_dailies(self):
         sql_update = (''' UPDATE daily
@@ -299,46 +306,90 @@ class Database(Thread, metaclass=SingletonType):
             ''' = ? WHERE member_id = ? AND server_id = ?'''
         self.execute(sql_update, (completed, member.id, server.id))
 
-    def reset_weeklies(self):
+    def reset_season(self):
+
         sql_update = (''' UPDATE weekly
                           SET   weekly_message = 0,
                                 weekly_game = 0,
                                 weekly_voice = 0 ''')
         self.execute(sql_update)
 
-    # Inventory
+        sql_update = (''' UPDATE counter
+                          SET   message_counter = 0,
+                                game_counter = 0,
+                                voice_counter = 0,
+                                pity_counter = 0 ''')
+        self.execute(sql_update)
 
-    def get_items(self, member, server):
+        sql_update = (''' UPDATE lootbox
+                          SET   season_common_lootbox_count = 0,
+                                season_rare_lootbox_count = 0,
+                                season_epic_lootbox_count = 0,
+                                season_legendary_lootbox_count = 0 ''')
+        self.execute(sql_update)
 
-        items = []
-        sql_retrieve = '''SELECT item_id FROM inventory WHERE member_id = ? AND server_id = ?'''
+        sql_update = (''' UPDATE multiplier
+                          SET   message_multiplier = 1,
+                                game_multiplier = 1,
+                                voice_multiplier = 1 ''')
+        self.execute(sql_update)
+
+        sql_update = (''' UPDATE member
+                          SET   experience = 0,
+                                level = 0''')
+        self.execute(sql_update)
+
+        sql_delete = '''DELETE FROM deck'''
+        self.execute(sql_delete)
+
+    def add_season_end(self, server):
+        winner = self.get_ranking(server)[0]
+        season_number = self.get_season_number(server) + 1
+        sql_update = '''INSERT INTO season(server_id, season_number, season_winner, level_reached) VALUES(?,?,?,?)'''
+        self.execute(
+            sql_update, (server.id, season_number, winner[0], winner[1]))
+
+    def get_season_number(self, server):
+        season_number = 0
+        sql_retrieve = '''SELECT season_number FROM season WHERE server_id = ? ORDER BY season_number DESC LIMIT 1'''
+        for res in self.select(sql_retrieve, (server.id,)):
+            if res:
+                season_number = res[0]
+        return season_number
+
+    # deck
+
+    def get_cards(self, member, server):
+
+        cards = []
+        sql_retrieve = '''SELECT card_id FROM deck WHERE member_id = ? AND server_id = ?'''
         for res in self.select(sql_retrieve, (member.id, server.id)):
-            items.append(res[0])
-        if items:
-            return items
+            cards.append(res[0])
+        if cards:
+            return cards
         return None
 
-    def add_item(self, member, server, item_id):
+    def add_card(self, member, server, card_id):
 
-        items = self.get_items(member, server)
-        if items:
-            count = len(items)
+        cards = self.get_cards(member, server)
+        if cards:
+            count = len(cards)
         else:
             count = 0
 
-        if count < settings.INVENTORY_SIZE:
-            sql_insert = '''INSERT INTO inventory(member_id, server_id, item_id) VALUES(?,?,?)'''
-            self.execute(sql_insert, (member.id, server.id, item_id))
+        if count < settings.DECK_SIZE:
+            sql_insert = '''INSERT INTO deck(member_id, server_id, card_id) VALUES(?,?,?)'''
+            self.execute(sql_insert, (member.id, server.id, card_id))
             return True
         return False
 
-    def remove_item(self, member, server, item_id):
+    def remove_card(self, member, server, card_id):
 
-        items = self.get_items(member, server)
-        if items:
-            if item_id in items:
-                sql_insert = '''DELETE FROM inventory WHERE member_id = ?, server_id = ?, item_id = ?'''
-                self.execute(sql_insert, (member.id, server.id, item_id))
+        cards = self.get_cards(member, server)
+        if cards:
+            if card_id in cards:
+                sql_delete = '''DELETE FROM deck WHERE row_id = (SELECT row_id FROM deck WHERE member_id = ? AND server_id = ? AND card_id = ? LIMIT 1)'''
+                self.execute(sql_delete, (member.id, server.id, card_id))
                 return True
         else:
             return False

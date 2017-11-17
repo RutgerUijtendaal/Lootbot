@@ -1,4 +1,6 @@
 import logging
+import asyncio
+import random
 import cogs.utils.messages as messages
 
 log = logging.getLogger(__name__)
@@ -6,17 +8,113 @@ log = logging.getLogger(__name__)
 # Item functions
 
 
-async def award_epic_server(bot, member, server, item):
+async def spam_function(bot, member, server, card):
 
-    item['user'] = member.name
+    spam_reward = {
+        'name': "Message Base Experience",
+        'type': 'experience',
+        'target': 'message',
+        'value': 100
+    }
 
+    total_exp = await bot.award_experience(member, server, spam_reward)
+
+    message = messages.create_card_use_message(
+        bot.db, member, server, card, total_exp=total_exp)
+
+    await bot.say_lootbot_channel(server, message)
+
+
+async def npc_function(bot, member, server, card):
+
+    npc_reward = {
+        'name': "Game Base Experience",
+        'type': 'experience',
+        'target': 'game',
+        'value': 100
+    }
+
+    total_exp = await bot.award_experience(member, server, npc_reward)
+
+    message = messages.create_card_use_message(
+        bot.db, member, server, card, total_exp=total_exp)
+
+    await bot.say_lootbot_channel(server, message)
+
+
+async def booming_voice_function(bot, member, server, card):
+
+    booming_voice_reward = {
+        'name': "Voice Base Experience",
+        'type': 'experience',
+        'target': 'voice',
+        'value': 100
+    }
+
+    total_exp = await bot.award_experience(member, server, booming_voice_reward)
+
+    message = messages.create_card_use_message(
+        bot.db, member, server, card, total_exp=total_exp)
+
+    await bot.say_lootbot_channel(server, message)
+
+
+async def pot_of_greed_function(bot, member, server, card):
+
+    lootbox_reward = [0, 0, 0, 0]
+
+    for _ in range(2):
+        rarity = bot.roll_lootbox_rarity_string()
+        lootbox_reward[0] += 1 if rarity == 'common' else 0
+        lootbox_reward[1] += 1 if rarity == 'rare' else 0
+        lootbox_reward[2] += 1 if rarity == 'epic' else 0
+        lootbox_reward[3] += 1 if rarity == 'legendary' else 0
+
+    reward_summary = await bot.create_lootbox_reward(
+        member, server, common=lootbox_reward[0], rare=lootbox_reward[1], epic=lootbox_reward[2], legendary=lootbox_reward[3])
+
+    message = messages.create_card_use_message(
+        bot.db, member, server, card, reward_summary=reward_summary)
+
+    await bot.say_lootbot_channel(server, message)
+
+
+async def epic_mage_ring_function(bot, member, server, card):
+    card['user_name'] = member.name
     for _member in server.members:
-        reward_summary = await bot.create_lootbox_reward(_member, server, epic=1)
+        if not _member.bot:
+            reward_summary = await bot.create_lootbox_reward(_member, server, common=0, rare=0, epic=1, legendary=0)
 
-        message = messages.create_item_use_message(
-            bot.db, member, server, item, reward_summary=reward_summary)
+            message = messages.create_card_use_message(
+                bot.db, _member, server, card, reward_summary=reward_summary)
 
-        bot.say_lootbox_channel(message, server)
+            await bot.say_lootbot_channel(server, message)
+
+
+async def stacked_deck_function(bot, member, server, card):
+    card['user_name'] = member.name
+    members = []
+    cards = bot.rewards['loot']['card']
+    for _member in server.members:
+        if not _member.bot:
+            members.append(_member)
+
+    for _ in range(2):
+        _member = members[random.randint(0, len(members) - 1)]
+        members.remove(_member)
+        _card = [cards[random.randint(0, len(cards) - 1)]]
+
+        await bot.process_loot(_member, server, _card)
+
+        message = messages.create_card_use_message(
+            bot.db, _member, server, card)
+
+        message += "```js\n"
+        message += "# Card:"
+        message += "\n  [" + _card[0]['name'] + "]"
+        message += "```"
+
+        await bot.say_lootbot_channel(server, message)
 
 
 # Reward list
@@ -49,7 +147,7 @@ REWARDS = {
 
     ],
 
-    # Instant rewards are not stored in inventory and applied to the user right away
+    # Instant rewards are not stored in deck and applied to the user right away
     'loot': {
 
         'common': [
@@ -455,30 +553,79 @@ REWARDS = {
             }
         ],
 
-        'item': [
+        'card': [
             {
-                'item_id': 1,
-                'name': "",
-                'type': 'item',
-                'description': "",
-                'reward_text': "",
-                'flavour_text': "",
-                'show_user': True,
+                'card_id': 1,
+                'name': "Spam",
+                'type': 'card',
+                'description': "Award 100 Message Experience points to the user",
+                'reward_text': "Message Experience Points",
+                'flavour_text': "Eggs, Bacon, Sausage and Spam...",
+                'show_user': False,
                 'user_name': "",
-                'function': award_epic_server
+                'function': spam_function
             },
 
             {
-                'item_id': 2,
-                'name': "",
-                'type': 'item',
-                'description': "",
+                'card_id': 2,
+                'name': "Squire",
+                'type': 'card',
+                'description': "Award 100 Game Experience points to the user",
+                'reward_text': "Game Experience Points",
+                'flavour_text': "Squire, attend me!",
+                'show_user': False,
+                'user_name': "",
+                'function': npc_function
+            },
+
+            {
+                'card_id': 3,
+                'name': "Booming Voice",
+                'type': 'card',
+                'description': "Award 100 Voice Experience points to the user",
+                'reward_text': "Voice Experience Points",
+                'flavour_text': "Winner of every shouting contest.",
+                'show_user': False,
+                'user_name': "",
+                'function': booming_voice_function
+            },
+
+            {
+                'card_id': 4,
+                'name': "Pot of Greed",
+                'type': 'card',
+                'description': "Give the user 2 random lootboxes",
                 'reward_text': "",
-                'flavour_text': "",
+                'flavour_text': "It's been tournament illegal since 2005.",
+                'show_user': False,
+                'user_name': "",
+                'function': pot_of_greed_function
+            },
+
+            {
+                'card_id': 5,
+                'name': "Epic Mage Ring",
+                'type': 'card',
+                'description': "Give everyone on the server an epic Lootbox",
+                'reward_text': "",
+                'flavour_text': "Screw the blue staff Jimmy, we're going for the epics.",
                 'show_user': True,
                 'user_name': "",
-                'function': award_epic_server
+                'function': epic_mage_ring_function
             },
+
+            {
+                'card_id': 6,
+                'name': "Stacked Deck",
+                'type': 'card',
+                'description': "Give two random people on the server a card",
+                'reward_text': "A random card.",
+                'flavour_text': "A great Magician never reals his trick.",
+                'show_user': True,
+                'user_name': "",
+                'function': stacked_deck_function
+            }
+
 
 
         ]

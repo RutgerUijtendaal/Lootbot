@@ -24,19 +24,23 @@ LOOTBOX_EMOJI = [
 
 LOOTBOX_SETTINGS = {
     'loot_counter': 2,              # Instant reward count per lootbox
-    'item_loot_counter': 1,         # Item reward count per item chance
+    'card_loot_counter': 1,         # Item reward count per card chance
     'lootbox_chance': 1,            # Chance is 1/lootbox_chance
     'pity_modifier': 0.94,          # Create a curve to inc drop chance with pity timer
     'boxes_modifier': 1.05,
-    'common_chance': 0, #12,            # Rarity chance form an array to pick from
-    'rare_chance': 0, #7,               # Chance for a rarity is rarity_chance/array_length
-    'epic_chance': 0, #2,
+    'common_chance': 0,  # 12,            # Rarity chance form an array to pick from
+    'rare_chance': 0,  # 7,               # Chance for a rarity is rarity_chance/array_length
+    'epic_chance': 0,  # 2,
     'legendary_chance': 1
 }
 
+# Messages
+
+MESSAGE_TIMER = 5
+
 # Game
 
-GAME_TIMER = 60                     # Time in seconds to award users for being in game
+GAME_TIMER = 120                     # Time in seconds to award users for being in game
 
 GAMES_CHECK_WHITELIST = False
 GAMES_WHITELIST = [
@@ -49,6 +53,6 @@ GAMES_WHITELIST = [
 
 VOICE_TIMER = 60
 
-# Inventory
+# deck
 
-INVENTORY_SIZE = 5
+DECK_SIZE = 5

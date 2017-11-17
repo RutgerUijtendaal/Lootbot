@@ -9,7 +9,6 @@ sql_create_member_table = """ CREATE TABLE IF NOT EXISTS member (
                                     server_id TEXT NOT NULL,
                                     experience INTEGER DEFAULT 0,
                                     level INTEGER DEFAULT 0,
-                                    rested INTEGER DEFAULT 0,
                                     FOREIGN KEY (server_id) REFERENCES servers(server_id),
                                     PRIMARY KEY (member_id, server_id)
                                     )"""
@@ -71,10 +70,11 @@ sql_create_weekly_table = """ CREATE TABLE IF NOT EXISTS weekly (
                                     PRIMARY KEY (member_id, server_id)                                   
                                     )"""
 
-sql_create_inventory_table = """ CREATE TABLE IF NOT EXISTS inventory (
+sql_create_deck_table = """ CREATE TABLE IF NOT EXISTS deck (
+                                    row_id INTEGER PRIMARY KEY AUTOINCREMENT,
                                     member_id TEXT NOT NULL,
                                     server_id TEXT NOT NULL,  
-                                    item_id INT default 0,
+                                    card_id INT default 0,
                                     FOREIGN KEY (member_id, server_id) REFERENCES members(member_id, server_id)   
                                     )"""
 
@@ -82,11 +82,20 @@ sql_create_settings_table = """ CREATE TABLE IF NOT EXISTS settings (
                                     member_id TEXT NOT NULL,
                                     server_id TEXT NOT NULL,
                                     message_mentions INT DEFAULT 0,
-                                    message_loot INT DEFAULT 1,
+                                    message_loot INT DEFAULT 0,
                                     message_multipliers INT DEFAULT 1,
                                     message_score INT DEFAULT 1,
                                     FOREIGN KEY (member_id, server_id) REFERENCES members(member_id, server_id),
                                     PRIMARY KEY (member_id, server_id)                               
+                                    )"""
+
+sql_create_season_table = """ CREATE TABLE IF NOT EXISTS season (
+                                    row_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                    server_id INT NOT NULL,
+                                    season_number INT DEFAULT 0,
+                                    season_winner TEXT DEFAULT 'Lootbot',
+                                    level_reached INT DEFAULT 0,
+                                    FOREIGN KEY (server_id) REFERENCES server(server_id)                           
                                     )"""
 
 table_creation = [
@@ -97,6 +106,7 @@ table_creation = [
     sql_create_counter_table,
     sql_create_daily_table,
     sql_create_weekly_table,
-    sql_create_inventory_table,
-    sql_create_settings_table
+    sql_create_deck_table,
+    sql_create_settings_table,
+    sql_create_season_table
 ]

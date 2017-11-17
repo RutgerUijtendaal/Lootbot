@@ -13,7 +13,8 @@ Be lucky and earn a lootbox to earn more points!
 '''
 
 initial_extensions = (
-    "cogs.inventory",
+    "cogs.cards",
+    "cogs.user",
 )
 
 

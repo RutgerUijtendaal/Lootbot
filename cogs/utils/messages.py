@@ -2,6 +2,90 @@ import random
 import math
 import settings
 from data import strings
+from data.objects import rewards
+
+# Command messages
+
+
+def create_deck_message(deck):
+
+    message = "\n\n# Deck:"
+    for x in range(settings.DECK_SIZE):
+        if deck is not None:
+            message += "\n  " + str(x + 1) + ": "
+            if len(deck) > x:
+                for card in rewards.REWARDS['loot']['card']:
+                    if card['card_id'] == deck[x]:
+                        message += card['name']
+            else:
+                message += "Empty"
+        else:
+            message += "\n  " + str(x + 1) + ": Empty"
+
+    return message
+
+
+def create_lootbox_message(lootboxes):
+    message = ""
+    message += ("\n\n# Lootboxes:" +
+                "\n  Common:       " + str(lootboxes[0]) +
+                "\n  Rare:         " + str(lootboxes[1]) +
+                "\n  Epic:         " + str(lootboxes[2]) +
+                "\n  Legendary:    " + str(lootboxes[2]))
+
+    return message
+
+
+def create_multiplier_message(multipliers):
+
+    message = ""
+    message += ("\n\n# Multipliers:" +
+                "\n  Message:      " + str(multipliers[0]) +
+                "\n  Game:         " + str(multipliers[1]) +
+                "\n  Voice:        " + str(multipliers[2]))
+
+    return message
+
+
+def create_progress_message(progress):
+    level = progress[0]
+    experience = progress[1]
+    message = ""
+
+    level_exp = (experience - _get_exp_level(level))
+    next_level = _get_exp_next_level(level)
+    level_progress = math.ceil((level_exp / next_level) * 100)
+
+    message += (
+        "\n\n# Progress:" +
+        "\n  Level:        " + str(level) +
+        "\n  Level Exp:    " + str(level_exp) + (" " * (8 - len(str(level_exp)))) + "(" + str(level_progress) + " %)" +
+        "\n  Total Exp:    " + str(experience))
+
+    return message
+
+
+def create_ranking_message(ranking, body=False):
+    if body:
+        message = "```js\n"
+    else:
+        message = ""
+
+    message += "# Ranking"
+    for x, member in enumerate(ranking):
+        message += "\n  " + str(1 + x) + ": " + \
+            member[0] + (" " * (10 - len(str(member[0]))))
+        message += "(Level:" + \
+            (" " * (3 - len(str(member[1])))) + str(member[1])
+        message += " | Experience: " + str(member[2]) + ")"
+
+    if body:
+        message += "```"
+
+    return message
+
+
+# Program Announcements
 
 
 def create_level_message(db, member, server, reward_summary, level):
@@ -107,7 +191,7 @@ def create_game_message(db, member, server, reward_summary, show_loot=False):
 
     message += "\n" + \
         flavour[random.randint(
-            0, len(strings.message_flavour) - 1)] + " in " + member.game.name + "."
+            0, len(strings.game_flavour) - 1)] + " in " + member.game.name + "."
 
     message += "```"
 
@@ -144,20 +228,20 @@ def create_voice_message(db, member, server, reward_summary, show_loot=False):
     return message
 
 
-def create_item_add_error_message(member, item):
+def create_card_add_error_message(member, card):
     message = "```diff\n"
 
-    message += "- # Failed to item: " + \
-        item['name'] + " to user: " + member.name + "."
+    message += "- # Failed to card: " + \
+        card['name'] + " to user: " + member.name + "."
 
-    message += "\n\nYour inventory is probably full, use some of those items."
+    message += "\n\nYour deck is probably full, use some of those cards."
 
     message += "```"
 
     return message
 
 
-def create_item_use_message(db, member, server, item, reward_summary=None, show_loot=False):
+def create_card_use_message(db, member, server, card, total_exp=None, reward_summary=None, show_loot=False):
 
     message = ""
 
@@ -175,18 +259,22 @@ def create_item_use_message(db, member, server, item, reward_summary=None, show_
 
         message += _create_lootbox_summary(rarity_count)
 
-        message += _create_user_summary(db, message_settings,
-                                        member, server, loots, gained_exp, show_loot=show_loot)
+        message += "\n"
+
+    elif total_exp is not None:
+
+        message += "  " + str(total_exp) + " " + card['reward_text'] + "\n\n"
 
     else:
-        message += item['reward_text']
+        message += "  " + card['reward_text'] + "\n\n"
 
-    if item['show_user']:
-        message += "From " + item['user'] + 'using' + item['name']
+    if card['show_user']:
+        message += "From " + card['user_name'] + \
+            ' using ' + card['name'] + "\n\n"
     else:
-        message += "From using: " + item['name'] + "\n\n"
+        message += "From using: " + card['name'] + "\n\n"
 
-    message += item['flavour_text']
+    message += card['flavour_text']
 
     message += "```"
 
@@ -202,21 +290,21 @@ def _create_lootbox_summary(rarity_count):
     message = ""
 
     if rarity_count[0] > 1:
-        message += str(rarity_count[0]) + " common Lootboxes\n"
+        message += "  " + str(rarity_count[0]) + " common Lootboxes\n"
     elif rarity_count[0] == 1:
-        message += str(rarity_count[0]) + " common Lootbox\n"
+        message += "  " + str(rarity_count[0]) + " common Lootbox\n"
     if rarity_count[1] > 1:
-        message += str(rarity_count[1]) + " rare Lootboxes\n"
+        message += "  " + str(rarity_count[1]) + " rare Lootboxes\n"
     elif rarity_count[1] == 1:
-        message += str(rarity_count[1]) + " rare Lootbox\n"
+        message += "  " + str(rarity_count[1]) + " rare Lootbox\n"
     if rarity_count[2] > 1:
-        message += str(rarity_count[2]) + " epic Lootboxes\n"
+        message += "  " + str(rarity_count[2]) + " epic Lootboxes\n"
     elif rarity_count[2] == 1:
-        message += str(rarity_count[2]) + " epic Lootbox\n"
+        message += "  " + str(rarity_count[2]) + " epic Lootbox\n"
     if rarity_count[3] > 1:
-        message += str(rarity_count[3]) + " legendary Lootboxes\n"
+        message += "  " + str(rarity_count[3]) + " legendary Lootboxes\n"
     elif rarity_count[3] == 1:
-        message += str(rarity_count[3]) + " legendary Lootbox\n"
+        message += "  " + str(rarity_count[3]) + " legendary Lootbox\n"
 
     return message
 
@@ -230,9 +318,12 @@ def _create_user_summary(db, message_settings, member, server, loots, gained_exp
     if message_settings[1] or show_loot:
         message += "\n# Loot:"
 
+    has_card = False
+
     for loot in loots:
         if message_settings[1] or show_loot:
-            message += "\n  " + loot['name']
+            if loot['type'] != 'card':
+                message += "\n  " + loot['name']
 
         if loot['type'] == 'multiplier':
             if loot['target'] == 'message':
@@ -241,6 +332,14 @@ def _create_user_summary(db, message_settings, member, server, loots, gained_exp
                 add_multipliers[1] += loot['value']
             if loot['target'] == 'voice':
                 add_multipliers[2] += loot['value']
+        if loot['type'] == 'card':
+            has_card = True
+
+    if has_card:
+        message += "\n\n# Cards:"
+        for loot in loots:
+            if loot['type'] == 'card':
+                message += "\n  [" + loot['name'] + "]"
 
     if message_settings[2]:
         new_multipliers = db.get_multipliers(member, server)
