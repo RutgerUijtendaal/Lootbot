@@ -19,7 +19,7 @@ class Bot:
 
     @commands.command(pass_context=True)
     async def links(self, ctx):
-        ''' Opens all the lootboxes for your account '''
+        ''' Post the links for the bots development '''
         message = ("```md\n" +
                    "#[Google Docs for how things work]:\n" + settings.DESIGN_LINK + "\n\n" +
                    "#[Trello for what is being worked on]:\n" + settings.TRELLO_LINK + "\n\n" +

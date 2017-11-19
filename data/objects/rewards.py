@@ -11,74 +11,138 @@ log = logging.getLogger(__name__)
 
 
 async def spam_function(bot, member, server, card):
+    card['user_name'] = member.name
+    members = []
+    for _member in server.members:
+        if not _member.bot:
+            if _member.id != member.id:
+                members.append(_member)
 
-    spam_reward = {
-        'name': "Message Base Experience",
-        'type': 'experience',
-        'target': 'message',
-        'value': 100
-    }
+    use_message = []
+    for x in range(2):
+        if x == 0:
+            _member = member
+        else:
+            _member = members[random.randint(0, len(members) - 1)]
+            members.remove(_member)
 
-    total_exp = await bot.award_experience(member, server, spam_reward)
+        spam_reward = {
+            'name': "Message Base Experience",
+            'type': 'experience',
+            'target': 'message',
+            'value': 100
+        }
 
-    message = messages.create_card_use_message(
-        bot.db, member, server, card, total_exp=total_exp)
+        total_exp = await bot.award_experience(_member, server, spam_reward)
 
-    await bot.say_lootbot_channel(server, message)
+        message = messages.create_card_use_message(
+            bot.db, _member, server, card, total_exp=total_exp)
+
+        use_message.append(message)
+
+    return use_message
 
 
 async def npc_function(bot, member, server, card):
+    card['user_name'] = member.name
+    members = []
+    for _member in server.members:
+        if not _member.bot:
+            if _member.id != member.id:
+                members.append(_member)
 
-    npc_reward = {
-        'name': "Game Base Experience",
-        'type': 'experience',
-        'target': 'game',
-        'value': 100
-    }
+    use_message = []
+    for x in range(2):
+        if x == 0:
+            _member = member
+        else:
+            _member = members[random.randint(0, len(members) - 1)]
+            members.remove(_member)
 
-    total_exp = await bot.award_experience(member, server, npc_reward)
+        npc_reward = {
+            'name': "Game Base Experience",
+            'type': 'experience',
+            'target': 'game',
+            'value': 100
+        }
 
-    message = messages.create_card_use_message(
-        bot.db, member, server, card, total_exp=total_exp)
+        total_exp = await bot.award_experience(_member, server, npc_reward)
 
-    await bot.say_lootbot_channel(server, message)
+        message = messages.create_card_use_message(
+            bot.db, _member, server, card, total_exp=total_exp)
+
+        use_message.append(message)
+
+    return use_message
 
 
 async def booming_voice_function(bot, member, server, card):
+    card['user_name'] = member.name
+    members = []
+    for _member in server.members:
+        if not _member.bot:
+            if _member.id != member.id:
+                members.append(_member)
 
-    booming_voice_reward = {
-        'name': "Voice Base Experience",
-        'type': 'experience',
-        'target': 'voice',
-        'value': 100
-    }
+    use_message = []
+    for x in range(2):
+        if x == 0:
+            _member = member
+        else:
+            _member = members[random.randint(0, len(members) - 1)]
+            members.remove(_member)
 
-    total_exp = await bot.award_experience(member, server, booming_voice_reward)
+        booming_voice_reward = {
+            'name': "Voice Base Experience",
+            'type': 'experience',
+            'target': 'voice',
+            'value': 100
+        }
 
-    message = messages.create_card_use_message(
-        bot.db, member, server, card, total_exp=total_exp)
+        total_exp = await bot.award_experience(_member, server, booming_voice_reward)
 
-    await bot.say_lootbot_channel(server, message)
+        message = messages.create_card_use_message(
+            bot.db, _member, server, card, total_exp=total_exp)
+
+        use_message.append(message)
+
+    return use_message
 
 
 async def pot_of_greed_function(bot, member, server, card):
+    card['user_name'] = member.name
+    members = []
+    for _member in server.members:
+        if not _member.bot:
+            if _member.id != member.id:
+                members.append(_member)
 
-    lootbox_reward = [0, 0, 0, 0]
+    use_message = []
+    for x in range(2):
+        if x == 0:
+            _member = member
+        else:
+            _member = members[random.randint(0, len(members) - 1)]
+            members.remove(_member)
 
-    for _ in range(2):
-        rarity = bot.roll_lootbox_rarity_string()
-        lootbox_reward[0] += 1 if rarity == 'common' else 0
-        lootbox_reward[1] += 1 if rarity == 'rare' else 0
-        lootbox_reward[2] += 1 if rarity == 'epic' else 0
-        lootbox_reward[3] += 1 if rarity == 'legendary' else 0
+        lootbox_reward = [0, 0, 0, 0]
 
-    reward_summary = await bot.create_lootbox_reward(
-        member, server, common=lootbox_reward[0], rare=lootbox_reward[1], epic=lootbox_reward[2], legendary=lootbox_reward[3])
+        for _ in range(2):
+            rarity = bot.roll_lootbox_rarity_string()
+            lootbox_reward[0] += 1 if rarity == 'common' else 0
+            lootbox_reward[1] += 1 if rarity == 'rare' else 0
+            lootbox_reward[2] += 1 if rarity == 'epic' else 0
+            lootbox_reward[3] += 1 if rarity == 'legendary' else 0
 
-    message = messages.create_card_use_message(
-        bot.db, member, server, card, reward_summary=reward_summary)
+        reward_summary = await bot.create_lootbox_reward(
+            _member, server, common=lootbox_reward[0], rare=lootbox_reward[1], epic=lootbox_reward[2], legendary=lootbox_reward[3])
 
-    await bot.say_lootbot_channel(server, message)
+        message = messages.create_card_use_message(
+            bot.db, _member, server, card, reward_summary=reward_summary)
+
+        use_message.append(message)
+
+    return use_message
 
 
 async def epic_mage_ring_function(bot, member, server, card):
@@ -86,8 +150,10 @@ async def epic_mage_ring_function(bot, member, server, card):
     members = []
     for _member in server.members:
         if not _member.bot:
-            members.append(_member)
+            if _member.id != member.id:
+                members.append(_member)
 
+    use_message = []
     for x in range(2):
         if x == 0:
             _member = member
@@ -100,7 +166,9 @@ async def epic_mage_ring_function(bot, member, server, card):
         message = messages.create_card_use_message(
             bot.db, _member, server, card, reward_summary=reward_summary)
 
-        await bot.say_lootbot_channel(server, message)
+        use_message.append(message)
+
+    return use_message
 
 
 async def stacked_deck_function(bot, member, server, card):
@@ -109,8 +177,10 @@ async def stacked_deck_function(bot, member, server, card):
     cards = bot.rewards['loot']['card']
     for _member in server.members:
         if not _member.bot:
-            members.append(_member)
+            if _member.id != member.id:
+                members.append(_member)
 
+    use_message = []
     for x in range(2):
         if x == 0:
             _member = member
@@ -125,7 +195,9 @@ async def stacked_deck_function(bot, member, server, card):
         message = messages.create_card_use_message(
             bot.db, _member, server, card)
 
-        await bot.say_lootbot_channel(server, message)
+        use_message.append(message)
+
+    return use_message
 
 
 # Reward list
@@ -569,10 +641,10 @@ REWARDS = {
                 'card_id': 1,
                 'name': "Spam",
                 'type': 'card',
-                'description': "Award 100 Message Experience points to the user",
+                'description': "Award 100 Message Experience points to the user and one random member",
                 'reward_text': "Message Experience Points",
                 'flavour_text': "~ Eggs, Bacon, Sausage and Spam... ~",
-                'show_user': False,
+                'show_user': True,
                 'user_name': "",
                 'function': spam_function
             },
@@ -581,10 +653,10 @@ REWARDS = {
                 'card_id': 2,
                 'name': "Squire",
                 'type': 'card',
-                'description': "Award 100 Game Experience points to the user",
+                'description': "Award 100 Game Experience points to the user and one random member",
                 'reward_text': "Game Experience Points",
                 'flavour_text': "~ Squire, attend me! ~",
-                'show_user': False,
+                'show_user': True,
                 'user_name': "",
                 'function': npc_function
             },
@@ -593,10 +665,10 @@ REWARDS = {
                 'card_id': 3,
                 'name': "Booming Voice",
                 'type': 'card',
-                'description': "Award 100 Voice Experience points to the user",
+                'description': "Award 100 Voice Experience points to the user and one random member",
                 'reward_text': "Voice Experience Points",
                 'flavour_text': "~ Winner of every shouting contest. ~",
-                'show_user': False,
+                'show_user': True,
                 'user_name': "",
                 'function': booming_voice_function
             },
@@ -605,10 +677,10 @@ REWARDS = {
                 'card_id': 4,
                 'name': "Pot of Greed",
                 'type': 'card',
-                'description': "Give the user 2 random lootboxes",
+                'description': "Give the user and one random member 2 random lootboxes",
                 'reward_text': "",
                 'flavour_text': "~ It's been tournament illegal since 2005. ~",
-                'show_user': False,
+                'show_user': True,
                 'user_name': "",
                 'function': pot_of_greed_function
             },

@@ -270,7 +270,7 @@ def create_card_use_message(db, member, server, card, total_exp=None, reward_sum
     elif total_exp is not None:
 
         message += "<1  [" + str(total_exp) + " " + \
-            card['reward_text'] + "]\n\n"
+            card['reward_text'] + "]>\n\n"
 
     else:
         message += "<-  [" + card['reward_text'] + "]>\n\n"

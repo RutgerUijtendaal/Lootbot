@@ -25,7 +25,9 @@ class Quests:
         message = "```md\n# Dailies:\n\n"
         for x, daily in enumerate(self.questslist['daily']):
             message += "<" + str(x + 1) + "  [" + daily['name'] + "]>\n"
-            message += "    " + daily['description'] + "\n\n"
+            message += "#   " + daily['description'] + "\n"
+            message += "    [Reward: " + \
+                daily['reward_rarity'] + " Lootbox]" + "\n\n"
         message += "```"
         await self.bot.say(message)
 
@@ -35,7 +37,9 @@ class Quests:
         message = "```md\n# Weeklies:\n\n"
         for x, weekly in enumerate(self.questslist['weekly']):
             message += "<" + str(x + 1) + "  [" + weekly['name'] + "]>\n"
-            message += "    " + weekly['description'] + "\n\n"
+            message += "#   " + weekly['description'] + "\n"
+            message += "    [Reward: " + \
+                weekly['reward_rarity'] + " Lootbox]" + "\n\n"
         message += "```"
         await self.bot.say(message)
 
@@ -45,11 +49,15 @@ class Quests:
         message = "```md\n# Dailies:\n\n"
         for x, daily in enumerate(self.questslist['daily']):
             message += "<" + str(x + 1) + "  [" + daily['name'] + "]>\n"
-            message += "    " + daily['description'] + "\n\n"
+            message += "#   " + daily['description'] + "\n"
+            message += "    [Reward: " + \
+                daily['reward_rarity'] + " Lootbox]" + "\n\n"
         message += "# Weeklies:\n\n"
         for x, weekly in enumerate(self.questslist['weekly']):
             message += "<" + str(x + 1) + "  [" + weekly['name'] + "]>\n"
-            message += "    " + weekly['description'] + "\n\n"
+            message += "#   " + weekly['description'] + "\n"
+            message += "    [Reward: " + \
+                weekly['reward_rarity'] + " Lootbox]" + "\n\n"
         message += "```"
         await self.bot.say(message)
 

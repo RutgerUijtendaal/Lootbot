@@ -56,7 +56,7 @@ class User:
 
     @commands.command(pass_context=True)
     async def progress(self, ctx):
-        """ List your multipliers """
+        """ List your progress this season """
         member = ctx.message.author
         server = ctx.message.server
 
@@ -98,10 +98,12 @@ class User:
 
         message = "```md\n"
         message += "[" + ctx.message.author.name + \
-            "](" + str(progress[0]) + ")"
+            "](" + str(progress[0]) + ")\n\n"
 
+        message += "<Type '$play cardname'> to play a card."
         message += messages.create_deck_message(deck)
-
+        message += "\n\n"
+        message += "[For all commands type:]('$help')"
         message += "```"
 
         await self.bot.say(message)

@@ -22,7 +22,7 @@ class Items:
 
         card_id = None
         for _card in self.bot.rewards['loot']['card']:
-            if _card['name'] == card_name:
+            if _card['name'].lower() == card_name.lower():
                 card_id = _card['card_id']
 
         card_used = False
@@ -30,6 +30,9 @@ class Items:
             card_used = await self.bot.process_card(ctx.message.author, ctx.message.server, int(card_id))
             if not card_used:
                 await self.bot.say("Can't find that card in your deck. Stop trying to cheat!")
+            else:
+                for message in card_used:
+                    await self.bot.say(message)
         else:
             await self.bot.say("That doesn't sound like an card to me, did you typo?")
 
@@ -44,7 +47,7 @@ class Items:
 
         card = None
         for _card in self.bot.rewards['loot']['card']:
-            if _card['name'] == card_name:
+            if _card['name'].lower() == card_name.lower():
                 card = _card
 
         if card is not None:

@@ -45,15 +45,15 @@ LOOTBOX_SETTINGS = {
     'lootbox_chance': 100,            # Chance is 1/lootbox_chance
     'pity_modifier': 0.94,          # Create a curve to inc drop chance with pity timer
     'boxes_modifier': 1.05,
-    'common_chance': 12,            # Rarity chance form an array to pick from
-    'rare_chance': 7,               # Chance for a rarity is rarity_chance/array_length
-    'epic_chance': 2,
+    'common_chance': 10,            # Rarity chance form an array to pick from
+    'rare_chance': 6,               # Chance for a rarity is rarity_chance/array_length
+    'epic_chance': 3,
     'legendary_chance': 1
 }
 
 # Messages
 
-MESSAGE_TIMER = 5
+MESSAGE_TIMER = 3
 
 # Game
 

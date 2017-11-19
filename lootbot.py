@@ -4,9 +4,8 @@ import logging
 import random
 import math
 import datetime
-from threading import Timer
-
 import asyncio
+import discord
 from discord.ext import commands
 
 import settings
@@ -38,10 +37,12 @@ class Lootbot(commands.Bot):
         self.message_timer = None
         self.game_timer = None
         self.voice_timer = None
+        self.offline_timer = None
         # Setup game/voice users
         self.message_users = []
         self.game_users = []
         self.voice_users = []
+        self.offline_users = []
 
     async def on_ready(self):
         log.info("Discord client ready")
@@ -51,6 +52,8 @@ class Lootbot(commands.Bot):
         await self.set_message_timer()
         await self.set_game_timer()
         await self.set_voice_timer()
+        game = discord.Game(name="Type $deck")
+        await self.change_presence(game=game)
 
     async def add_all_servers(self):
         for server in self.servers:
@@ -66,9 +69,6 @@ class Lootbot(commands.Bot):
     async def close(self):
         log.info("Shutting down bot")
         self.db.close()
-        self.game_timer.cancel()
-        self.voice_timer.cancel()
-        self.daily_timer.cancel()
         await super().close()
 
     async def on_member_update(self, bmember, amember):
@@ -100,6 +100,7 @@ class Lootbot(commands.Bot):
                         await self.say_lootbot_channel(bmember.server, message)
 
             # Filter the user out of the game_users list
+            log.info("Member: %s removed from game users", amember.name)
             self.game_users = list(
                 filter(lambda x: x[0] != amember.id and x[1] != amember.server.id, self.game_users))
 
@@ -217,6 +218,7 @@ class Lootbot(commands.Bot):
         game_user = [member.id, server.id]
         """
         self.message_users.append([member.id, server.id])
+        log.info("Member %s added to message users", member.name)
 
     async def set_message_timer(self):
         message_timer_seconds = settings.MESSAGE_TIMER
@@ -231,24 +233,30 @@ class Lootbot(commands.Bot):
         for user in self.game_users:
             member = self.get_member_object(user[0], user[1])
             server = self.get_server_object(user[0], user[1])
-            if self.roll_lootbox(member, server):
-                lootbox_rarity_int = self.roll_lootbox_rarity_int()
-                user[2][lootbox_rarity_int] += 1
-            user[3] += 1
-            # If the user played for more than daily req award daily
-            if (user[3] * settings.GAME_TIMER / 60) >= self.quests['daily'][1]['goal_value']:
-                if self.db.get_dailies(member, server)[1] == 0:
-                    await self.complete_quest(member, server, self.quests['daily'][1])
-            # Add a tick to the game counter
-            self.db.set_game_counter(member, server, 1)
-            game_counter = self.db.get_counters(member, server)[1]
-            # If total play time this season is higher than weekly award weekly
-            if (game_counter * settings.GAME_TIMER / 60) >= self.quests['weekly'][1]['goal_value']:
-                if self.db.get_weeklies(member, server)[1] == 0:
-                    await self.complete_quest(member, server, self.quests['weekly'][1])
-            # Award experience
-            experience = await self.award_experience(member, server, self.rewards['experience'][1])
-            self.db.update_experience(member, server, experience)
+            # Make sure the user is still in game
+            if member.game is not None:
+                if self.roll_lootbox(member, server):
+                    lootbox_rarity_int = self.roll_lootbox_rarity_int()
+                    user[2][lootbox_rarity_int] += 1
+                user[3] += 1
+                # If the user played for more than daily req award daily
+                if (user[3] * settings.GAME_TIMER / 60) >= self.quests['daily'][1]['goal_value']:
+                    if self.db.get_dailies(member, server)[1] == 0:
+                        await self.complete_quest(member, server, self.quests['daily'][1])
+                # Add a tick to the game counter
+                self.db.set_game_counter(member, server, 1)
+                game_counter = self.db.get_counters(member, server)[1]
+                # If total play time this season is higher than weekly award weekly
+                if (game_counter * settings.GAME_TIMER / 60) >= self.quests['weekly'][1]['goal_value']:
+                    if self.db.get_weeklies(member, server)[1] == 0:
+                        await self.complete_quest(member, server, self.quests['weekly'][1])
+                # Award experience
+                experience = await self.award_experience(member, server, self.rewards['experience'][1])
+                self.db.update_experience(member, server, experience)
+            else:
+                log.info("Member: %s removed from game users", member.name)
+                self.game_users = list(filter(
+                    lambda x: x[0] != member.id and x[1] != member.server.id, self.game_users))
 
         # Start a new timer to process game users again
         await self.set_game_timer()
@@ -259,6 +267,7 @@ class Lootbot(commands.Bot):
         game_user = [member.id, server.id, [common, rare, epic, legendary], tick_counts]
         """
         self.game_users.append([member.id, server.id, [0, 0, 0, 0], 0])
+        log.info("Member %s added to game users", member.name)
 
     async def set_game_timer(self):
         game_timer_seconds = settings.GAME_TIMER
@@ -295,6 +304,7 @@ class Lootbot(commands.Bot):
             # Filter the user out of the voice_users list
             self.voice_users = list(
                 filter(lambda x: x[0] != amember.id and x[1] != amember.server.id, self.voice_users))
+            log.info("Member %s removed from voice users", amember.name)
 
     async def process_voice_users(self):
         """ Get the voice user list and iterate through them, award lootboxes, experience, dailies and weeklies
@@ -304,26 +314,31 @@ class Lootbot(commands.Bot):
         for user in self.voice_users:
             member = self.get_member_object(user[0], user[1])
             server = self.get_server_object(user[0], user[1])
-            if self.check_voice_users(server):
-                if self.roll_lootbox(member, server):
-                    lootbox_rarity_int = self.roll_lootbox_rarity_int()
-                    user[2][lootbox_rarity_int] += 1
-                user[3] += 1
-                # If the user played for more than daily req award daily
-                if (user[3] * settings.VOICE_TIMER / 60) >= self.quests['daily'][2]['goal_value']:
-                    if self.db.get_dailies(member, server)[2] == 0:
-                        await self.complete_quest(member, server, self.quests['daily'][2])
-                # Add a tick to the game counter
-                self.db.set_voice_counter(member, server, 1)
-                voice_counter = self.db.get_counters(member, server)[2]
-                # If total play time this season is higher than weekly award weekly
-                if (voice_counter * settings.VOICE_TIMER / 60) >= self.quests['weekly'][2]['goal_value']:
-                    if self.db.get_weeklies(member, server)[2] == 0:
-                        await self.complete_quest(member, server, self.quests['weekly'][2])
-                # Award experience
-                experience = await self.award_experience(
-                    member, server, self.rewards['experience'][2])
-                self.db.update_experience(member, server, experience)
+            if member.voice.voice_channel is not None:
+                if self.check_voice_users(server):
+                    if self.roll_lootbox(member, server):
+                        lootbox_rarity_int = self.roll_lootbox_rarity_int()
+                        user[2][lootbox_rarity_int] += 1
+                    user[3] += 1
+                    # If the user played for more than daily req award daily
+                    if (user[3] * settings.VOICE_TIMER / 60) >= self.quests['daily'][2]['goal_value']:
+                        if self.db.get_dailies(member, server)[2] == 0:
+                            await self.complete_quest(member, server, self.quests['daily'][2])
+                    # Add a tick to the game counter
+                    self.db.set_voice_counter(member, server, 1)
+                    voice_counter = self.db.get_counters(member, server)[2]
+                    # If total play time this season is higher than weekly award weekly
+                    if (voice_counter * settings.VOICE_TIMER / 60) >= self.quests['weekly'][2]['goal_value']:
+                        if self.db.get_weeklies(member, server)[2] == 0:
+                            await self.complete_quest(member, server, self.quests['weekly'][2])
+                    # Award experience
+                    experience = await self.award_experience(
+                        member, server, self.rewards['experience'][2])
+                    self.db.update_experience(member, server, experience)
+            else:
+                self.voice_users = list(filter(
+                    lambda x: x[0] != member.id and x[1] != member.server.id, self.voice_users))
+                log.info("Member %s removed from voice users", member.name)
 
         # Start a new timer to process voice users again
         await self.set_voice_timer()
@@ -346,6 +361,7 @@ class Lootbot(commands.Bot):
             common, rare, epic, legendary], tick_counts]
         """
         self.voice_users.append([member.id, server.id, [0, 0, 0, 0], 0])
+        log.info("Member %s added to voice users", member.name)
 
     async def set_voice_timer(self):
         voice_timer_seconds = settings.VOICE_TIMER
@@ -543,11 +559,12 @@ class Lootbot(commands.Bot):
         if deck is None:
             return False
 
+        messages = []
         for _card_id in deck:
             if _card_id == card_id:
-                await card['function'](self, member, server, card)
+                messages = await card['function'](self, member, server, card)
                 self.db.remove_card(member, server, card_id)
-                return True
+                return messages
 
         return False
 
@@ -609,10 +626,14 @@ class Lootbot(commands.Bot):
         delta = y - x
         secs = delta.seconds
         self.daily_timer = Timer(secs, self.reset_dailies)
-        log.info("Daily reset set for %s", y)
+        log.info("Daily reset set for %i seconds", secs)
 
     async def reset_dailies(self):
         """ Reset the dailies, announce and start timer for next day """
+        for server in self.servers:
+            ranking = self.db.get_ranking(server)
+            message = messages.create_ranking_message(ranking, body=True)
+            await self.say_lootbot_channel(server, message)
         self.db.reset_dailies()
         log.info("Reset dailies")
         await self.say_global("Dailies have been reset")
@@ -634,13 +655,14 @@ class Lootbot(commands.Bot):
         next_reset = datetime.datetime.combine(x, y)
 
         delta = next_reset - datetime.datetime.today()
-        secs = delta.seconds
+        secs = delta.seconds + delta.days * (24 * 60 * 60)
 
         self.season_timer = Timer(secs, self.reset_season)
-        log.info("Season reset set for %s", next_reset)
+        log.info("Season reset set for %i seconds", secs)
 
     async def reset_season(self):
         """ Reset the dailies, announce and start timer for next day """
+        # Announce season end
         for server in self.servers:
             ranking = self.db.get_ranking(server)
             message = messages.create_ranking_message(ranking, body=True)
@@ -649,6 +671,19 @@ class Lootbot(commands.Bot):
         log.info("Reset Season")
         asyncio.sleep(1)
         await self.say_global("Season has been reset.")
+        # Award starter cards
+        cards = self.rewards['loot']['card']
+        message = "```md\n# Season starter cards:\n\n"
+        for server in self.servers:
+            for member in server.members:
+                if not member.bot:
+                    card = [cards[random.randint(0, len(cards) - 1)]]
+                    await self.process_loot(member, server, card)
+
+                    message += member.name + " got card: \n"
+                    message += "\n<-  [" + card[0]['name'] + "]>\n\n"
+                message += "```"
+            await self.say_lootbot_channel(server, message)
         await self.start_season()
 
     async def start_season(self):
