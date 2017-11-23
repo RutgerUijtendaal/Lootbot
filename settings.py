@@ -42,7 +42,7 @@ LOOTBOX_EMOJI = [
 LOOTBOX_SETTINGS = {
     'loot_counter': 2,              # Instant reward count per lootbox
     'card_loot_counter': 1,         # Item reward count per card chance
-    'lootbox_chance': 100,            # Chance is 1/lootbox_chance
+    'lootbox_chance': 1,            # Chance is 1/lootbox_chance
     'pity_modifier': 0.94,          # Create a curve to inc drop chance with pity timer
     'boxes_modifier': 1.05,
     'common_chance': 10,            # Rarity chance form an array to pick from
@@ -72,4 +72,4 @@ VOICE_TIMER = 60
 
 # deck
 
-DECK_SIZE = 3
+DECK_SIZE = 5

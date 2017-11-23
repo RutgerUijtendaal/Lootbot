@@ -39,6 +39,11 @@ game_flavour = {
         "For playing late game decks"
     ],
 
+    'Heroes of the Storm': [
+        "For defending the core",
+        "For topping the ranks"
+    ],
+
     'default': [
         "For playing",
         "For doing... whatever you do"

@@ -54,7 +54,7 @@ def create_progress_message(progress):
     experience = progress[1]
     message = ""
 
-    level_exp = (experience - _get_exp_level(level))
+    level_exp = math.ceil(experience - _get_exp_level(level))
     next_level = _get_exp_next_level(level)
     level_progress = math.ceil((level_exp / next_level) * 100)
 
@@ -375,7 +375,7 @@ def _create_user_summary(db, message_settings, member, server, loots, gained_exp
 
         # Level % progress
         # Subtract from xp for next level to get xp for this level
-        level_exp = (experience - _get_exp_level(level))
+        level_exp = math.ceil(experience - _get_exp_level(level))
         next_level = _get_exp_next_level(level)
         level_progress = math.ceil((level_exp / next_level) * 100)
 
@@ -391,7 +391,7 @@ def _create_user_summary(db, message_settings, member, server, loots, gained_exp
 
 
 def _get_exp_level(level):
-    level_exp = settings.LEVEL_BASE * (level * level)
+    level_exp = settings.LEVEL_BASE * (level ** 2.2)
     return level_exp
 
 

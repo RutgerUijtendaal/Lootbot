@@ -98,7 +98,7 @@ class Database(Thread, metaclass=SingletonType):
 
     def get_ranking(self, server):
         ranking = []
-        sql_retrieve = '''SELECT name, level, experience FROM member WHERE server_id = ? ORDER BY experience DESC'''
+        sql_retrieve = '''SELECT name, level, experience, member_id FROM member WHERE server_id = ? ORDER BY experience DESC'''
         for res in self.select(sql_retrieve, (server.id,)):
             ranking.append(res)
         return ranking

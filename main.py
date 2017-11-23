@@ -8,6 +8,7 @@ from lootbot import Lootbot
 
 description = '''
 # Lootbot 
+
 Use Discord to play the game. Collect Experience, Level up, get Lootboxes. Hate RNG.
 
 Lootboxes can reward cards. Type $deck to check your deck or $cardlist to see all the cards.

@@ -16,15 +16,19 @@ async def spam_function(bot, member, server, card):
     for _member in server.members:
         if not _member.bot:
             if _member.id != member.id:
-                members.append(_member)
+                if _member.id != bot.db.get_ranking(server)[0][3]:
+                    members.append(_member)
 
     use_message = []
     for x in range(2):
         if x == 0:
             _member = member
         else:
-            _member = members[random.randint(0, len(members) - 1)]
-            members.remove(_member)
+            if members:
+                _member = members[random.randint(0, len(members) - 1)]
+                members.remove(_member)
+            else:
+                _member = None
 
         spam_reward = {
             'name': "Message Base Experience",
@@ -33,12 +37,13 @@ async def spam_function(bot, member, server, card):
             'value': 100
         }
 
-        total_exp = await bot.award_experience(_member, server, spam_reward)
+        if _member:
+            total_exp = await bot.award_experience(_member, server, spam_reward)
 
-        message = messages.create_card_use_message(
-            bot.db, _member, server, card, total_exp=total_exp)
+            message = messages.create_card_use_message(
+                bot.db, _member, server, card, total_exp=total_exp)
 
-        use_message.append(message)
+            use_message.append(message)
 
     return use_message
 
@@ -49,15 +54,19 @@ async def npc_function(bot, member, server, card):
     for _member in server.members:
         if not _member.bot:
             if _member.id != member.id:
-                members.append(_member)
+                if _member.id != bot.db.get_ranking(server)[0][3]:
+                    members.append(_member)
 
     use_message = []
     for x in range(2):
         if x == 0:
             _member = member
         else:
-            _member = members[random.randint(0, len(members) - 1)]
-            members.remove(_member)
+            if members:
+                _member = members[random.randint(0, len(members) - 1)]
+                members.remove(_member)
+            else:
+                _member = None
 
         npc_reward = {
             'name': "Game Base Experience",
@@ -65,13 +74,13 @@ async def npc_function(bot, member, server, card):
             'target': 'game',
             'value': 100
         }
+        if _member:
+            total_exp = await bot.award_experience(_member, server, npc_reward)
 
-        total_exp = await bot.award_experience(_member, server, npc_reward)
+            message = messages.create_card_use_message(
+                bot.db, _member, server, card, total_exp=total_exp)
 
-        message = messages.create_card_use_message(
-            bot.db, _member, server, card, total_exp=total_exp)
-
-        use_message.append(message)
+            use_message.append(message)
 
     return use_message
 
@@ -82,15 +91,19 @@ async def booming_voice_function(bot, member, server, card):
     for _member in server.members:
         if not _member.bot:
             if _member.id != member.id:
-                members.append(_member)
+                if _member.id != bot.db.get_ranking(server)[0][3]:
+                    members.append(_member)
 
     use_message = []
     for x in range(2):
         if x == 0:
             _member = member
         else:
-            _member = members[random.randint(0, len(members) - 1)]
-            members.remove(_member)
+            if members:
+                _member = members[random.randint(0, len(members) - 1)]
+                members.remove(_member)
+            else:
+                _member = None
 
         booming_voice_reward = {
             'name': "Voice Base Experience",
@@ -99,12 +112,13 @@ async def booming_voice_function(bot, member, server, card):
             'value': 100
         }
 
-        total_exp = await bot.award_experience(_member, server, booming_voice_reward)
+        if _member:
+            total_exp = await bot.award_experience(_member, server, booming_voice_reward)
 
-        message = messages.create_card_use_message(
-            bot.db, _member, server, card, total_exp=total_exp)
+            message = messages.create_card_use_message(
+                bot.db, _member, server, card, total_exp=total_exp)
 
-        use_message.append(message)
+            use_message.append(message)
 
     return use_message
 
@@ -115,32 +129,37 @@ async def pot_of_greed_function(bot, member, server, card):
     for _member in server.members:
         if not _member.bot:
             if _member.id != member.id:
-                members.append(_member)
+                if _member.id != bot.db.get_ranking(server)[0][3]:
+                    members.append(_member)
 
     use_message = []
     for x in range(2):
         if x == 0:
             _member = member
         else:
-            _member = members[random.randint(0, len(members) - 1)]
-            members.remove(_member)
+            if members:
+                _member = members[random.randint(0, len(members) - 1)]
+                members.remove(_member)
+            else:
+                _member = None
 
         lootbox_reward = [0, 0, 0, 0]
 
-        for _ in range(2):
-            rarity = bot.roll_lootbox_rarity_string()
-            lootbox_reward[0] += 1 if rarity == 'common' else 0
-            lootbox_reward[1] += 1 if rarity == 'rare' else 0
-            lootbox_reward[2] += 1 if rarity == 'epic' else 0
-            lootbox_reward[3] += 1 if rarity == 'legendary' else 0
+        if _member:
+            for _ in range(2):
+                rarity = bot.roll_lootbox_rarity_string()
+                lootbox_reward[0] += 1 if rarity == 'common' else 0
+                lootbox_reward[1] += 1 if rarity == 'rare' else 0
+                lootbox_reward[2] += 1 if rarity == 'epic' else 0
+                lootbox_reward[3] += 1 if rarity == 'legendary' else 0
 
-        reward_summary = await bot.create_lootbox_reward(
-            _member, server, common=lootbox_reward[0], rare=lootbox_reward[1], epic=lootbox_reward[2], legendary=lootbox_reward[3])
+            reward_summary = await bot.create_lootbox_reward(
+                _member, server, common=lootbox_reward[0], rare=lootbox_reward[1], epic=lootbox_reward[2], legendary=lootbox_reward[3])
 
-        message = messages.create_card_use_message(
-            bot.db, _member, server, card, reward_summary=reward_summary)
+            message = messages.create_card_use_message(
+                bot.db, _member, server, card, reward_summary=reward_summary)
 
-        use_message.append(message)
+            use_message.append(message)
 
     return use_message
 
@@ -151,22 +170,27 @@ async def epic_mage_ring_function(bot, member, server, card):
     for _member in server.members:
         if not _member.bot:
             if _member.id != member.id:
-                members.append(_member)
+                if _member.id != bot.db.get_ranking(server)[0][3]:
+                    members.append(_member)
 
     use_message = []
     for x in range(2):
         if x == 0:
             _member = member
         else:
-            _member = members[random.randint(0, len(members) - 1)]
-            members.remove(_member)
+            if members:
+                _member = members[random.randint(0, len(members) - 1)]
+                members.remove(_member)
+            else:
+                _member = None
 
-        reward_summary = await bot.create_lootbox_reward(_member, server, common=0, rare=0, epic=1, legendary=0)
+        if _member:
+            reward_summary = await bot.create_lootbox_reward(_member, server, common=0, rare=0, epic=1, legendary=0)
 
-        message = messages.create_card_use_message(
-            bot.db, _member, server, card, reward_summary=reward_summary)
+            message = messages.create_card_use_message(
+                bot.db, _member, server, card, reward_summary=reward_summary)
 
-        use_message.append(message)
+            use_message.append(message)
 
     return use_message
 
@@ -178,24 +202,29 @@ async def stacked_deck_function(bot, member, server, card):
     for _member in server.members:
         if not _member.bot:
             if _member.id != member.id:
-                members.append(_member)
+                if _member.id != bot.db.get_ranking(server)[0][3]:
+                    members.append(_member)
 
     use_message = []
     for x in range(2):
         if x == 0:
             _member = member
         else:
-            _member = members[random.randint(0, len(members) - 1)]
-            members.remove(_member)
+            if members:
+                _member = members[random.randint(0, len(members) - 1)]
+                members.remove(_member)
+            else:
+                _member = None
 
         _card = [cards[random.randint(0, len(cards) - 1)]]
 
-        await bot.process_loot(_member, server, _card)
-        card['reward_text'] = _card[0]['name']
-        message = messages.create_card_use_message(
-            bot.db, _member, server, card)
+        if _member:
+            await bot.process_loot(_member, server, _card)
+            card['reward_text'] = _card[0]['name']
+            message = messages.create_card_use_message(
+                bot.db, _member, server, card)
 
-        use_message.append(message)
+            use_message.append(message)
 
     return use_message
 

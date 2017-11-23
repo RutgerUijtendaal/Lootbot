@@ -168,7 +168,7 @@ class Lootbot(commands.Bot):
         """ Calculate if a level should be awarded if total experience is bigger than xp for next level """
         level = member_progress[0] + 1
         experience = member_progress[1]
-        if experience >= settings.LEVEL_BASE * (level * level):
+        if experience >= settings.LEVEL_BASE * (level ** 2.2):
             return True
         return False
 
@@ -287,7 +287,7 @@ class Lootbot(commands.Bot):
 
         # When a user leaves voice chat check time and award points & lootboxes
         if bmember.voice.voice_channel is not None and amember.voice.voice_channel is None:
-            box_earned = True
+            box_earned = False
             for user in self.voice_users:
                 if user[0] == bmember.id and user[1] == bmember.server.id:
                     # Check if any Lootboxes were earned
@@ -448,7 +448,10 @@ class Lootbot(commands.Bot):
                 for loot in self.collect_loot(rarity, count=1):
                     loots.append(loot)
 
-        self.db.add_lootbox(member, server, rarity)
+        if card:
+            self.db.add_lootbox(member, server, 'legendary')
+        else:
+            self.db.add_lootbox(member, server, rarity)
 
         return loots
 
@@ -562,8 +565,8 @@ class Lootbot(commands.Bot):
         messages = []
         for _card_id in deck:
             if _card_id == card_id:
-                messages = await card['function'](self, member, server, card)
                 self.db.remove_card(member, server, card_id)
+                messages = await card['function'](self, member, server, card)
                 return messages
 
         return False
@@ -673,8 +676,8 @@ class Lootbot(commands.Bot):
         await self.say_global("Season has been reset.")
         # Award starter cards
         cards = self.rewards['loot']['card']
-        message = "```md\n# Season starter cards:\n\n"
         for server in self.servers:
+            message = "```md\n# Season starter cards:\n\n"
             for member in server.members:
                 if not member.bot:
                     card = [cards[random.randint(0, len(cards) - 1)]]
@@ -682,7 +685,7 @@ class Lootbot(commands.Bot):
 
                     message += member.name + " got card: \n"
                     message += "\n<-  [" + card[0]['name'] + "]>\n\n"
-                message += "```"
+            message += "```"
             await self.say_lootbot_channel(server, message)
         await self.start_season()
 
